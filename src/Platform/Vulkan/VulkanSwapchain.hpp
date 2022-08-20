@@ -22,7 +22,10 @@ namespace SkinBuilder
 		Shared<VulkanDevice> m_Device;
 		VkSurfaceKHR m_Surface = VK_NULL_HANDLE;
 
-		VkSwapchainKHR m_Swapchain;
+		VkSwapchainKHR m_Swapchain = VK_NULL_HANDLE;
+
+		std::vector<VkImage> m_Images;
+		std::vector<VkImageView> m_ImageViews;
 	public:
 		VulkanSwapchain(VkInstance instance, Shared<VulkanDevice> device, VkSurfaceKHR surface);
 		~VulkanSwapchain();

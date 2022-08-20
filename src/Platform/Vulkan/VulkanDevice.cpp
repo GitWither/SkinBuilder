@@ -1,3 +1,4 @@
+#include <iostream>
 #include <Platform/Vulkan/VulkanDevice.hpp>
 
 #include <set>
@@ -82,8 +83,6 @@ namespace SkinBuilder
 		deviceCreateInfo.enabledExtensionCount = static_cast<uint32_t>(s_DeviceExtensions.size());
 		deviceCreateInfo.ppEnabledExtensionNames = s_DeviceExtensions.data();
 		deviceCreateInfo.pEnabledFeatures = &deviceFeatures;
-
-		deviceCreateInfo.enabledExtensionCount = 0;
 
 		if constexpr (s_EnableValidationLayers)
 		{

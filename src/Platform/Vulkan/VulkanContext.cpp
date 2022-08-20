@@ -12,7 +12,7 @@ namespace SkinBuilder
 
 #ifdef SKINBUILDER_DEBUG
 	constexpr bool s_EnableValidationLayers = true;
-	constexpr std::array<const char*, 1> s_ValidationLayers = {
+	constexpr std::array s_ValidationLayers = {
 		"VK_LAYER_KHRONOS_validation"
 	};
 #else

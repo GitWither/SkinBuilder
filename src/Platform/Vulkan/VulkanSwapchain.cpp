@@ -1,3 +1,4 @@
+#include <iostream>
 #include <vector>
 #include <Platform/Vulkan/VulkanSwapchain.hpp>
 
@@ -77,8 +78,8 @@ namespace SkinBuilder
 		createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
 		createInfo.surface = m_Surface;
 		createInfo.minImageCount = imageCount;
-		createInfo.imageColorSpace = m_SurfaceFormat.colorSpace;
 		createInfo.imageFormat = m_SurfaceFormat.format;
+		createInfo.imageColorSpace = m_SurfaceFormat.colorSpace;
 		createInfo.imageExtent = m_SwapExtent;
 		createInfo.imageArrayLayers = 1;
 		createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
@@ -109,10 +110,45 @@ namespace SkinBuilder
 		{
 			//TODO: Assert
 		}
+
+		vkGetSwapchainImagesKHR(m_Device->GetLogicalDevice(), m_Swapchain, &imageCount, nullptr);
+
+		m_Images.resize(imageCount);
+		m_ImageViews.resize(imageCount);
+
+		vkGetSwapchainImagesKHR(m_Device->GetLogicalDevice(), m_Swapchain, &imageCount, m_Images.data());
+
+
+		for (size_t i = 0; i < imageCount; i++)
+		{
+			VkImageViewCreateInfo viewCreateInfo{};
+			viewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+			viewCreateInfo.image = m_Images[i];
+			viewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+			viewCreateInfo.format = m_SurfaceFormat.format;
+			viewCreateInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+			viewCreateInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+			viewCreateInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+			viewCreateInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+			viewCreateInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			viewCreateInfo.subresourceRange.baseMipLevel = 0;
+			viewCreateInfo.subresourceRange.levelCount = 1;
+			viewCreateInfo.subresourceRange.baseArrayLayer = 0;
+			viewCreateInfo.subresourceRange.layerCount = 1;
+
+			if (vkCreateImageView(m_Device->GetLogicalDevice(), &viewCreateInfo, nullptr, &m_ImageViews[i]) != VK_SUCCESS)
+			{
+				//TODO: Assert here
+			}
+		}
 	}
 
 	VulkanSwapchain::~VulkanSwapchain()
 	{
+		for (const auto& imageView : m_ImageViews)
+		{
+			vkDestroyImageView(m_Device->GetLogicalDevice(), imageView, nullptr);
+		}
 		vkDestroySwapchainKHR(m_Device->GetLogicalDevice(), m_Swapchain, nullptr);
 	}
 
