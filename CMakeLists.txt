@@ -21,7 +21,10 @@ add_subdirectory("deps/glfw")
 
 add_subdirectory("deps/glm")
 
-message("${Vulkan_LIBRARY}")
+target_compile_definitions("${PROJECT_NAME}" PRIVATE
+  $<$<CONFIG:Debug>:SKINBUILDER_DEBUG>
+  $<$<CONFIG:Release>:SKINBUILDER_RELEASE>
+)
 
 target_include_directories("${PROJECT_NAME}" PUBLIC "${Vulkan_INCLUDE_DIRS}" PRIVATE "src")
 

@@ -2,6 +2,9 @@
 
 #include <memory>
 
+#if !defined(NDEBUG) && !defined(SKINBUILDER_DEBUG)
+#define SKINBUILDER_DEBUG
+#endif
 template <typename T>
 using Shared = std::shared_ptr<T>;
 
