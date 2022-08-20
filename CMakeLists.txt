@@ -8,7 +8,9 @@ set(CMAKE_VERBOSE_MAKEFILE ON)
 set(CMAKE_COLOR_MAKEFILE   ON)
 
 
-add_executable("${PROJECT_NAME}" "src/Main.cpp")
+file(GLOB SOURCES "src/*.cpp" "src/*.hpp" "src/*/*.hpp" "src/*/*.cpp" "src/*/*/*.hpp" "src/*/*/*.cpp")
+
+add_executable("${PROJECT_NAME}" "${SOURCES}")
 find_package(Vulkan REQUIRED)
 
 # set(GLFW_VULKAN_STATIC ON)
@@ -21,6 +23,6 @@ add_subdirectory("deps/glm")
 
 message("${Vulkan_LIBRARY}")
 
-target_include_directories("${PROJECT_NAME}" PUBLIC "${Vulkan_INCLUDE_DIRS}")
+target_include_directories("${PROJECT_NAME}" PUBLIC "${Vulkan_INCLUDE_DIRS}" PRIVATE "src")
 
 target_link_libraries("${PROJECT_NAME}" PRIVATE "glfw" "glm::glm" "${Vulkan_LIBRARIES}")
