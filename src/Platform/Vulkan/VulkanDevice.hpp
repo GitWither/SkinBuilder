@@ -28,7 +28,9 @@ namespace SkinBuilder
 		VulkanDevice(VkInstance instance, VkSurfaceKHR surface);
 		~VulkanDevice();
 
+		QueueFamilyIndices GetQueueFamilyIndices() const { return m_QueueFamilyIndices; }
 		VkPhysicalDevice GetPhysicalDevice() const { return m_PhysicalDevice; }
+		VkDevice GetLogicalDevice() const { return m_Device; }
 	private:
 		QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface);
 		bool VerifyExtensionSupport(VkPhysicalDevice device);

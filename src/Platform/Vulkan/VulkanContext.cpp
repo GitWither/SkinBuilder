@@ -72,6 +72,7 @@ namespace SkinBuilder
 		glfwCreateWindowSurface(m_Instance, static_cast<GLFWwindow*>(window->GetNative()), nullptr, &m_Surface);
 
 		m_Device = MakeShared<VulkanDevice>(m_Instance, m_Surface);
+		m_Swapchain = MakeShared<VulkanSwapchain>(m_Instance, m_Device, m_Surface);
 	}
 
 	VulkanContext::~VulkanContext()
