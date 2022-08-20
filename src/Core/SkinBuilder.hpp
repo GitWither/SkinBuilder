@@ -13,6 +13,8 @@ namespace SkinBuilder {
 	public:
 		SkinBuilder(const uint32_t width, const uint32_t height, const std::string& title);
 
+		static SkinBuilder* GetInstance();
+
 		void Run();
 	};
 
