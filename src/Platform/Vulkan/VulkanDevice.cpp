@@ -94,10 +94,7 @@ namespace SkinBuilder
 			deviceCreateInfo.enabledLayerCount = 0;
 		}
 
-		if (vkCreateDevice(m_PhysicalDevice, &deviceCreateInfo, nullptr, &m_Device) != VK_SUCCESS)
-		{
-			//TODO: Assert
-		}
+		SB_ASSERT(vkCreateDevice(m_PhysicalDevice, &deviceCreateInfo, nullptr, &m_Device) == VK_SUCCESS, "Failed to create logical device")
 
 		vkGetDeviceQueue(m_Device, m_QueueFamilyIndices.GraphicsFamily, 0, &m_Queue);
 	}

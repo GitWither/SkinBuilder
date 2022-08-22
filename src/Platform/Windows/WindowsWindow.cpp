@@ -32,7 +32,4 @@ namespace SkinBuilder
 	{
 		return glfwWindowShouldClose(m_Window);
 	}
-
-
-
 }

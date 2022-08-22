@@ -55,6 +55,8 @@ target_compile_definitions("${PROJECT_NAME}" PRIVATE
   $<$<CONFIG:Release>:SKINBUILDER_RELEASE>
 )
 
+target_compile_features("${PROJECT_NAME}" PRIVATE cxx_std_20)
+
 target_include_directories("${PROJECT_NAME}" PUBLIC "${Vulkan_INCLUDE_DIRS}" PRIVATE "src")
 
 target_link_libraries("${PROJECT_NAME}" PRIVATE "glfw" "glm::glm" "${Vulkan_LIBRARIES}")

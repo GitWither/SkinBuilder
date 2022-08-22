@@ -53,8 +53,7 @@ namespace SkinBuilder
 			createInfo.enabledLayerCount = 0;
 		}
 
-		VkResult result = vkCreateInstance(&createInfo, nullptr, &m_Instance);
-		//TODO: Assert here
+		SB_ASSERT(vkCreateInstance(&createInfo, nullptr, &m_Instance) == VK_SUCCESS, "Failed to create Vulkan instance")
 
 		uint32_t extensionCount = 0;
 
@@ -73,6 +72,12 @@ namespace SkinBuilder
 
 		m_Device = MakeShared<VulkanDevice>(m_Instance, m_Surface);
 		m_Swapchain = MakeShared<VulkanSwapchain>(m_Instance, m_Device, m_Surface);
+
+		VulkanPipelineInfo pipelineInfo;
+		pipelineInfo.RenderPass = m_Swapchain->GetRenderPass();
+		pipelineInfo.Shader = MakeShared<VulkanShader>("main", m_Device);
+
+		m_Pipeline = MakeShared<VulkanPipeline>(pipelineInfo, m_Device);
 	}
 
 	VulkanContext::~VulkanContext()

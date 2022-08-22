@@ -3,6 +3,8 @@
 
 #include <Platform/Vulkan/VulkanContext.hpp>
 
+#include "Platform/Vulkan/VulkanRenderer.hpp"
+
 namespace SkinBuilder
 {
 	static SkinBuilder* s_SkinBuilder = nullptr;
@@ -20,22 +22,31 @@ namespace SkinBuilder
 		return m_Window.get();
 	}
 
-	SkinBuilder* SkinBuilder::GetInstance()
+	SkinBuilder& SkinBuilder::GetInstance()
 	{
-		return s_SkinBuilder;
+		return *s_SkinBuilder;
 	}
 
 	void SkinBuilder::Run()
 	{
 		m_Running = true;
 
-		VulkanContext context(m_Window.get());
+		Shared<VulkanContext> context = MakeShared<VulkanContext>(m_Window.get());
+		VulkanRenderer renderer(context);
 
 		while (m_Running)
 		{
 			m_Window->PollEvents();
 
 
+
+			renderer.Begin();
+			renderer.Draw(0, 0);
+			renderer.End();
+
+			renderer.Submit();
+
+			m_Running = !m_Window->ShouldClose();
 		}
 	}
 }

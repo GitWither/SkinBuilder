@@ -63,7 +63,7 @@ namespace SkinBuilder
 		else
 		{
 			int width = 0, height = 0;
-			glfwGetFramebufferSize(static_cast<GLFWwindow*>(SkinBuilder::GetInstance()->GetWindow()->GetNative()), &width, &height);
+			glfwGetFramebufferSize(static_cast<GLFWwindow*>(SkinBuilder::GetInstance().GetWindow()->GetNative()), &width, &height);
 			m_SwapExtent.width = std::clamp(static_cast<uint32_t>(width), m_SurfaceCapabilities.minImageExtent.width, m_SurfaceCapabilities.maxImageExtent.width);
 			m_SwapExtent.height = std::clamp(static_cast<uint32_t>(width), m_SurfaceCapabilities.minImageExtent.height, m_SurfaceCapabilities.maxImageExtent.height);
 		}
@@ -106,15 +106,13 @@ namespace SkinBuilder
 		createInfo.clipped = VK_TRUE;
 		createInfo.oldSwapchain = VK_NULL_HANDLE;
 
-		if (vkCreateSwapchainKHR(m_Device->GetLogicalDevice(), &createInfo, nullptr, &m_Swapchain) != VK_SUCCESS)
-		{
-			//TODO: Assert
-		}
+		SB_ASSERT(vkCreateSwapchainKHR(m_Device->GetLogicalDevice(), &createInfo, nullptr, &m_Swapchain) == VK_SUCCESS, "Failed to create swap chain")
 
 		vkGetSwapchainImagesKHR(m_Device->GetLogicalDevice(), m_Swapchain, &imageCount, nullptr);
 
 		m_Images.resize(imageCount);
 		m_ImageViews.resize(imageCount);
+		m_Framebuffers.resize(imageCount);
 
 		vkGetSwapchainImagesKHR(m_Device->GetLogicalDevice(), m_Swapchain, &imageCount, m_Images.data());
 
@@ -141,16 +139,111 @@ namespace SkinBuilder
 				//TODO: Assert here
 			}
 		}
+
+		VkAttachmentDescription colorAttachment{};
+		colorAttachment.format = m_SurfaceFormat.format;
+		colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+		colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+		colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+		VkAttachmentReference colorAttachmentRef{};
+		colorAttachmentRef.attachment = 0;
+		colorAttachmentRef.layout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
+
+		VkSubpassDescription subpass{};
+		subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+		subpass.colorAttachmentCount = 1;
+		subpass.pColorAttachments = &colorAttachmentRef;
+
+		VkSubpassDependency subpassDependency{};
+		subpassDependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+		subpassDependency.dstSubpass = 0;
+		subpassDependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		subpassDependency.srcAccessMask = 0;
+		subpassDependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		subpassDependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
+		VkRenderPassCreateInfo renderPassInfo{};
+		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+		renderPassInfo.attachmentCount = 1;
+		renderPassInfo.pAttachments = &colorAttachment;
+		renderPassInfo.subpassCount = 1;
+		renderPassInfo.pSubpasses = &subpass;
+		renderPassInfo.dependencyCount = 1;
+		renderPassInfo.pDependencies = &subpassDependency;
+
+		vkCreateRenderPass(m_Device->GetLogicalDevice(), &renderPassInfo, nullptr, &m_RenderPass);
+
+		for (int i = 0; i < imageCount; i++)
+		{
+			VkFramebufferCreateInfo framebufferCreateInfo{};
+			framebufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+			framebufferCreateInfo.renderPass = m_RenderPass;
+			framebufferCreateInfo.attachmentCount = 1;
+			framebufferCreateInfo.pAttachments = &m_ImageViews[i];
+			framebufferCreateInfo.width = m_SwapExtent.width;
+			framebufferCreateInfo.height = m_SwapExtent.height;
+			framebufferCreateInfo.layers = 1;
+
+			vkCreateFramebuffer(m_Device->GetLogicalDevice(), &framebufferCreateInfo, nullptr, &m_Framebuffers[i]);
+		}
+
+		VkSemaphoreCreateInfo imageAvailSemaphoreInfo{};
+		imageAvailSemaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+		vkCreateSemaphore(m_Device->GetLogicalDevice(), &imageAvailSemaphoreInfo, nullptr, &m_ImageAvailableSemaphore);
+
+
+		VkSemaphoreCreateInfo renderFinishedSemaphoreInfo{};
+		renderFinishedSemaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+		vkCreateSemaphore(m_Device->GetLogicalDevice(), &renderFinishedSemaphoreInfo, nullptr, &m_RenderFinishedSemaphore);
+
+		VkFenceCreateInfo frameInFlightInfo{};
+		frameInFlightInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+		frameInFlightInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+		vkCreateFence(m_Device->GetLogicalDevice(), &frameInFlightInfo, nullptr, &m_FrameInFlightFence);
 	}
 
 	VulkanSwapchain::~VulkanSwapchain()
 	{
+		vkDestroyRenderPass(m_Device->GetLogicalDevice(), m_RenderPass, nullptr);
 		for (const auto& imageView : m_ImageViews)
 		{
 			vkDestroyImageView(m_Device->GetLogicalDevice(), imageView, nullptr);
 		}
+		for (uint32_t i = 0; i < m_Framebuffers.size(); i++)
+		{
+			vkDestroyFramebuffer(m_Device->GetLogicalDevice(), m_Framebuffers[i], nullptr);
+		}
 		vkDestroySwapchainKHR(m_Device->GetLogicalDevice(), m_Swapchain, nullptr);
 	}
 
+	void VulkanSwapchain::AcquireNextFrame()
+	{
+		vkWaitForFences(m_Device->GetLogicalDevice(), 1, &m_FrameInFlightFence, VK_TRUE, UINT64_MAX);
+		vkResetFences(m_Device->GetLogicalDevice(), 1, &m_FrameInFlightFence);
 
+		vkAcquireNextImageKHR(m_Device->GetLogicalDevice(), m_Swapchain, UINT64_MAX, m_ImageAvailableSemaphore, VK_NULL_HANDLE, &m_CurrentImageIndex);
+	}
+
+	void VulkanSwapchain::SwapBuffers()
+	{
+
+		VkPresentInfoKHR presentInfo{};
+		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+
+
+
+		presentInfo.waitSemaphoreCount = 1;
+		presentInfo.pWaitSemaphores = &m_RenderFinishedSemaphore;
+		presentInfo.swapchainCount = 1;
+		presentInfo.pSwapchains = &m_Swapchain;
+		presentInfo.pImageIndices = &m_CurrentImageIndex;
+		presentInfo.pResults = nullptr;
+
+		SB_ASSERT(vkQueuePresentKHR(m_Device->GetGraphicsQueue(), &presentInfo) == VK_SUCCESS, "Failed to present swapchain");
+	}
 }

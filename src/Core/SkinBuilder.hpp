@@ -15,7 +15,7 @@ namespace SkinBuilder {
 
 		Window* GetWindow() const;
 
-		static SkinBuilder* GetInstance();
+		static SkinBuilder& GetInstance();
 
 		void Run();
 	};
