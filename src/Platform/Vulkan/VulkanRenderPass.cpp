@@ -2,23 +2,53 @@
 
 namespace SkinBuilder
 {
-	VulkanRenderPass::VulkanRenderPass(Shared<VulkanSwapchain> swapchain) : m_Swapchain(swapchain)
-	{
-		VkAttachmentDescription colorAttachment{};
-		colorAttachment.format = m_Swapchain->GetImageFormat();
-		colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-		colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-		colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-		colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-		colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
+	VulkanRenderPass::VulkanRenderPass(const Shared<VulkanSwapchain>& swapchain, const VulkanRenderPassInfo& info) : m_Info(info), m_Swapchain(swapchain)
+	{
+		m_Info.TargetImageSize = m_Info.SwapchainTarget ? m_Swapchain->GetExtent() : m_Info.TargetImageSize;
 	}
+
+	void VulkanRenderPass::Begin(VkCommandBuffer commandBuffer)
+	{
+		VkImageView imageView = m_Info.SwapchainTarget ? m_Swapchain->GetCurrentImageView() : m_Info.TargetImageView;
+
+		VkRenderingAttachmentInfo colorAttachmentInfo{};
+		colorAttachmentInfo.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+		colorAttachmentInfo.clearValue = { {{1.0f, 1.0f, 1.0f, 1.0f}} };
+		colorAttachmentInfo.imageView = imageView;
+		colorAttachmentInfo.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+		colorAttachmentInfo.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		colorAttachmentInfo.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+
+		VkRenderingInfo renderingInfo{};
+		renderingInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
+		renderingInfo.flags = 0;
+		renderingInfo.renderArea.offset = { 0, 0 };
+		renderingInfo.renderArea.extent = m_Info.TargetImageSize;
+		renderingInfo.layerCount = 1;
+		renderingInfo.viewMask = 0;
+		renderingInfo.colorAttachmentCount = 1;
+		renderingInfo.pColorAttachments = &colorAttachmentInfo;
+		renderingInfo.pDepthAttachment = nullptr;
+		renderingInfo.pStencilAttachment = nullptr;
+
+		vkCmdBeginRendering(commandBuffer, &renderingInfo);
+	}
+
+	void VulkanRenderPass::End(VkCommandBuffer commandBuffer)
+	{
+		vkCmdEndRendering(commandBuffer);
+	}
+
+	VkImageView VulkanRenderPass::GetImageView() const
+	{
+		return m_Info.SwapchainTarget ? m_Swapchain->GetCurrentImageView() : m_Info.TargetImageView;
+	}
+
 
 	VulkanRenderPass::~VulkanRenderPass()
 	{
-		
+		m_Swapchain = nullptr;
 	}
 
 

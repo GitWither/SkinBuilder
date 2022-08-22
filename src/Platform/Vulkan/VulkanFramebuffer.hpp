@@ -10,7 +10,8 @@ namespace SkinBuilder
 	{
 		uint32_t Width;
 		uint32_t Height;
-		VkImageView ImageView;
+
+		std::vector<VkImageView> ImageViews;
 		VkFormat Format;
 		VkRenderPass RenderPass;
 	};

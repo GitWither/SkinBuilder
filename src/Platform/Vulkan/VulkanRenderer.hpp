@@ -15,8 +15,11 @@ namespace SkinBuilder
 	class VulkanRenderer
 	{
 	private:
-		VkCommandPool m_CommandPool;
-		VkCommandBuffer m_CommandBuffer;
+		std::vector<VkCommandPool> m_CommandPools;
+		std::vector<VkCommandBuffer> m_CommandBuffers;
+
+		Shared<VulkanRenderPass> m_SwapchainRenderPass;
+		Shared<VulkanPipeline> m_BasePipeline;
 
 		Shared<VulkanContext> m_Context;
 	public:

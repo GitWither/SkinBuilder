@@ -9,7 +9,7 @@ namespace SkinBuilder
 		framebufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
 		framebufferCreateInfo.renderPass = m_Info.RenderPass;
 		framebufferCreateInfo.attachmentCount = 1;
-		framebufferCreateInfo.pAttachments = &m_Info.ImageView;
+		//framebufferCreateInfo.pAttachments = &m_Info.ImageView;
 		framebufferCreateInfo.width = m_Info.Width;
 		framebufferCreateInfo.height = m_Info.Height;
 		framebufferCreateInfo.layers = 1;

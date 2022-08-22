@@ -74,7 +74,15 @@ namespace SkinBuilder
 		float queuePriority = 1.0f;
 		queueCreateInfo.pQueuePriorities = &queuePriority;
 
-		VkPhysicalDeviceFeatures deviceFeatures{};
+		//VkPhysicalDeviceFeatures deviceFeatures{};
+		VkPhysicalDeviceVulkan13Features deviceFeatures{};
+		deviceFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
+		deviceFeatures.dynamicRendering = VK_TRUE;
+		deviceFeatures.synchronization2 = VK_TRUE;
+
+		VkPhysicalDeviceFeatures2 deviceFeatures2{};
+		deviceFeatures2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+		deviceFeatures2.pNext = &deviceFeatures;
 
 		VkDeviceCreateInfo deviceCreateInfo{};
 		deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
@@ -82,7 +90,7 @@ namespace SkinBuilder
 		deviceCreateInfo.queueCreateInfoCount = 1;
 		deviceCreateInfo.enabledExtensionCount = static_cast<uint32_t>(s_DeviceExtensions.size());
 		deviceCreateInfo.ppEnabledExtensionNames = s_DeviceExtensions.data();
-		deviceCreateInfo.pEnabledFeatures = &deviceFeatures;
+		deviceCreateInfo.pNext = &deviceFeatures2;
 
 		if constexpr (s_EnableValidationLayers)
 		{

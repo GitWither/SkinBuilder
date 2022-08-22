@@ -12,7 +12,7 @@ namespace SkinBuilder
 {
 	struct VulkanPipelineInfo
 	{
-		VkRenderPass RenderPass;
+		VkFormat ColorAttachmentFormat;
 		Shared<VulkanShader> Shader;
 	};
 

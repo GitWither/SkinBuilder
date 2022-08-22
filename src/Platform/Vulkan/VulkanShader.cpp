@@ -63,7 +63,7 @@ namespace SkinBuilder
 
 	VulkanShader::~VulkanShader()
 	{
-		vkDestroyShaderModule(m_Device->GetLogicalDevice(), m_FragmentShader, nullptr);
+		vkDestroyShaderModule(m_Device->GetLogicalDevice(), m_VertexShader, nullptr);
 		vkDestroyShaderModule(m_Device->GetLogicalDevice(), m_FragmentShader, nullptr);
 	}
 }

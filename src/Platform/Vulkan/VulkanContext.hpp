@@ -16,7 +16,6 @@ namespace SkinBuilder
 		~VulkanContext();
 
 		Shared<VulkanSwapchain> GetSwapchain() const { return m_Swapchain; }
-		Shared<VulkanPipeline> GetPipeline() const { return m_Pipeline; }
 		Shared<VulkanDevice> GetDevice() const { return m_Device; }
 		VkInstance GetInstance() const { return m_Instance; }
 		VkSurfaceKHR GetSurface() const { return m_Surface; }
@@ -25,7 +24,6 @@ namespace SkinBuilder
 		VkSurfaceKHR m_Surface;
 		Shared<VulkanDevice> m_Device;
 		Shared<VulkanSwapchain> m_Swapchain;
-		Shared<VulkanPipeline> m_Pipeline;
 
 		bool FetchValidationLayers();
 	};
