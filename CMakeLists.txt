@@ -33,7 +33,7 @@ function(compile_shaders target)
                 -o "${CMAKE_BINARY_DIR}/${SHADER_FILE_NAME}${SHADER_STAGE}.spv"
                 ${source}
         )
-        message("Registering shader: ${SHADER_FILE_NAME}${SHADER_STAGE}")
+        message("-- Registering shader: ${SHADER_FILE_NAME}${SHADER_STAGE}")
         target_sources(${target} PRIVATE "${CMAKE_BINARY_DIR}/${SHADER_FILE_NAME}${SHADER_STAGE}.spv")
     endforeach()
 endfunction()
@@ -53,6 +53,11 @@ compile_shaders(${PROJECT_NAME} SHADERS ${SHADERS})
 target_compile_definitions("${PROJECT_NAME}" PRIVATE
   $<$<CONFIG:Debug>:SKINBUILDER_DEBUG>
   $<$<CONFIG:Release>:SKINBUILDER_RELEASE>
+)
+
+target_compile_options("${PROJECT_NAME}" PRIVATE
+  $<$<CXX_COMPILER_ID:MSVC>:/W4>
+  $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Wextra -Wpedantic>
 )
 
 target_compile_features("${PROJECT_NAME}" PRIVATE cxx_std_20)
