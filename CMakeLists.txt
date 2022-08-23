@@ -8,6 +8,8 @@ set(CMAKE_VERBOSE_MAKEFILE ON)
 set(CMAKE_COLOR_MAKEFILE   ON)
 
 
+file(GLOB IMGUI_SOURCES "deps/imgui/*.cpp")
+
 file(GLOB SOURCES "src/*.cpp" "src/*.hpp" "src/*/*.hpp" "src/*/*.cpp" "src/*/*/*.hpp" "src/*/*/*.cpp")
 file(GLOB SHADERS "assets/shaders/*.frag" "assets/shaders/*.vert")
 
@@ -47,8 +49,10 @@ add_subdirectory("deps/glfw")
 add_subdirectory("deps/glm")
 
 
-add_executable("${PROJECT_NAME}" "${SOURCES}")
+add_executable("${PROJECT_NAME}" "${SOURCES}" "${IMGUI_SOURCES}")
 compile_shaders(${PROJECT_NAME} SHADERS ${SHADERS})
+
+target_include_directories("${PROJECT_NAME}" PUBLIC "deps/imgui")
 
 target_compile_definitions("${PROJECT_NAME}" PRIVATE
   $<$<CONFIG:Debug>:SKINBUILDER_DEBUG>
