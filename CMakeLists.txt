@@ -48,6 +48,9 @@ add_subdirectory("deps/glfw")
 
 add_subdirectory("deps/glm")
 
+add_subdirectory("deps/spdlog")
+
+
 
 add_executable("${PROJECT_NAME}" "${SOURCES}" "${IMGUI_SOURCES}")
 compile_shaders(${PROJECT_NAME} SHADERS ${SHADERS})
@@ -68,4 +71,4 @@ target_compile_features("${PROJECT_NAME}" PRIVATE cxx_std_20)
 
 target_include_directories("${PROJECT_NAME}" PUBLIC "${Vulkan_INCLUDE_DIRS}" PRIVATE "src")
 
-target_link_libraries("${PROJECT_NAME}" PRIVATE "glfw" "glm::glm" "${Vulkan_LIBRARIES}")
+target_link_libraries("${PROJECT_NAME}" PRIVATE "glfw" "glm::glm" "${Vulkan_LIBRARIES}" "spdlog")
