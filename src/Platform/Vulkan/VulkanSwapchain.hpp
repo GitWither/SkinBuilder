@@ -30,21 +30,22 @@ namespace SkinBuilder
 		std::vector<VkImageView> m_ImageViews;
 		std::vector<VkFramebuffer> m_Framebuffers;
 
-		VkSemaphore m_ImageAvailableSemaphore;
-		VkSemaphore m_RenderFinishedSemaphore;
-		VkFence m_FrameInFlightFence;
+		std::vector<VkSemaphore> m_ImageAvailableSemaphores;
+		std::vector<VkSemaphore> m_RenderFinishedSemaphores;
+		std::vector<VkFence> m_FrameInFlightFences;
 
 		uint32_t m_CurrentImageIndex = 0;
 		uint32_t m_ImageCount = 0;
 
+		uint32_t m_MaxFramesInFlight;
 
 	public:
 		VulkanSwapchain(VkInstance instance, Shared<VulkanDevice> device, VkSurfaceKHR surface);
 		~VulkanSwapchain();
 
-		VkSemaphore GetImageAvailableSemaphore() const { return m_ImageAvailableSemaphore; }
-		VkSemaphore GetRenderFinishedSemaphore() const { return m_RenderFinishedSemaphore; }
-		VkFence GetFrameInFlightFence() const { return m_FrameInFlightFence; }
+		VkSemaphore GetImageAvailableSemaphore() const { return m_ImageAvailableSemaphores[m_CurrentImageIndex]; }
+		VkSemaphore GetRenderFinishedSemaphore() const { return m_RenderFinishedSemaphores[m_CurrentImageIndex]; }
+		VkFence GetFrameInFlightFence() const { return m_FrameInFlightFences[m_CurrentImageIndex]; }
 
 		VkFormat GetImageFormat() const { return m_SurfaceFormat.format; }
 		VkRenderPass GetRenderPass() const { return m_RenderPass; }
@@ -59,5 +60,6 @@ namespace SkinBuilder
 		uint32_t GetImageCount() const { return m_ImageCount; }
 		void AcquireNextFrame();
 		void SwapBuffers();
+		uint32_t GetMaxFramesInFlight() const { return m_MaxFramesInFlight; }
 	};
 }

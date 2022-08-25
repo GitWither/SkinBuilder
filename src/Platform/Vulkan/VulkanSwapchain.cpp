@@ -74,6 +74,7 @@ namespace SkinBuilder
 			imageCount = m_SurfaceCapabilities.maxImageCount;
 		}
 		m_ImageCount = imageCount;
+		m_MaxFramesInFlight = imageCount;
 
 		VkSwapchainCreateInfoKHR createInfo{};
 		createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
@@ -193,19 +194,23 @@ namespace SkinBuilder
 			vkCreateFramebuffer(m_Device->GetLogicalDevice(), &framebufferCreateInfo, nullptr, &m_Framebuffers[i]);
 		}
 
-		VkSemaphoreCreateInfo imageAvailSemaphoreInfo{};
-		imageAvailSemaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-		vkCreateSemaphore(m_Device->GetLogicalDevice(), &imageAvailSemaphoreInfo, nullptr, &m_ImageAvailableSemaphore);
-
-
-		VkSemaphoreCreateInfo renderFinishedSemaphoreInfo{};
-		renderFinishedSemaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-		vkCreateSemaphore(m_Device->GetLogicalDevice(), &renderFinishedSemaphoreInfo, nullptr, &m_RenderFinishedSemaphore);
+		m_ImageAvailableSemaphores.resize(m_MaxFramesInFlight);
+		m_RenderFinishedSemaphores.resize(m_MaxFramesInFlight);
+		m_FrameInFlightFences.resize(m_MaxFramesInFlight);
 
 		VkFenceCreateInfo frameInFlightInfo{};
 		frameInFlightInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
 		frameInFlightInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-		vkCreateFence(m_Device->GetLogicalDevice(), &frameInFlightInfo, nullptr, &m_FrameInFlightFence);
+
+		VkSemaphoreCreateInfo semaphoreInfo{};
+		semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+		for (uint32_t i = 0; i < m_MaxFramesInFlight; i++)
+		{
+			vkCreateSemaphore(m_Device->GetLogicalDevice(), &semaphoreInfo, nullptr, &m_ImageAvailableSemaphores[i]);
+			vkCreateSemaphore(m_Device->GetLogicalDevice(), &semaphoreInfo, nullptr, &m_RenderFinishedSemaphores[i]);
+			vkCreateFence(m_Device->GetLogicalDevice(), &frameInFlightInfo, nullptr, &m_FrameInFlightFences[i]);
+		}
 	}
 
 	VulkanSwapchain::~VulkanSwapchain()
@@ -227,10 +232,10 @@ namespace SkinBuilder
 
 	void VulkanSwapchain::AcquireNextFrame()
 	{
-		vkWaitForFences(m_Device->GetLogicalDevice(), 1, &m_FrameInFlightFence, VK_TRUE, UINT64_MAX);
-		vkResetFences(m_Device->GetLogicalDevice(), 1, &m_FrameInFlightFence);
+		vkWaitForFences(m_Device->GetLogicalDevice(), 1, &m_FrameInFlightFences[m_CurrentImageIndex], VK_TRUE, UINT64_MAX);
+		vkResetFences(m_Device->GetLogicalDevice(), 1, &m_FrameInFlightFences[m_CurrentImageIndex]);
 
-		vkAcquireNextImageKHR(m_Device->GetLogicalDevice(), m_Swapchain, UINT64_MAX, m_ImageAvailableSemaphore, VK_NULL_HANDLE, &m_CurrentImageIndex);
+		vkAcquireNextImageKHR(m_Device->GetLogicalDevice(), m_Swapchain, UINT64_MAX, m_ImageAvailableSemaphores[m_CurrentImageIndex], VK_NULL_HANDLE, &m_CurrentImageIndex);
 	}
 
 	void VulkanSwapchain::SwapBuffers()
@@ -242,12 +247,14 @@ namespace SkinBuilder
 
 
 		presentInfo.waitSemaphoreCount = 1;
-		presentInfo.pWaitSemaphores = &m_RenderFinishedSemaphore;
+		presentInfo.pWaitSemaphores = &m_RenderFinishedSemaphores[m_CurrentImageIndex];
 		presentInfo.swapchainCount = 1;
 		presentInfo.pSwapchains = &m_Swapchain;
 		presentInfo.pImageIndices = &m_CurrentImageIndex;
 		presentInfo.pResults = nullptr;
 
 		SB_ASSERT(vkQueuePresentKHR(m_Device->GetGraphicsQueue(), &presentInfo) == VK_SUCCESS, "Failed to present swapchain");
+
+		m_CurrentImageIndex = (m_CurrentImageIndex + 1) % m_MaxFramesInFlight;
 	}
 }

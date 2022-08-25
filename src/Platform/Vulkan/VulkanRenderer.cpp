@@ -4,27 +4,40 @@ namespace SkinBuilder
 {
 	VulkanRenderer::VulkanRenderer(const Shared<VulkanContext>& context) : m_Context(context)
 	{
-		VkCommandPoolCreateInfo commandPoolCreateInfo{};
-		commandPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-		commandPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-		commandPoolCreateInfo.queueFamilyIndex = m_Context->GetDevice()->GetQueueFamilyIndices().GraphicsFamily;
+		const VulkanSwapchain& swapchain = *context->GetSwapchain();
 
-		SB_ASSERT(vkCreateCommandPool(m_Context->GetDevice()->GetLogicalDevice(), &commandPoolCreateInfo, nullptr, &m_CommandPool) == VK_SUCCESS, "Failed to create command pool")
+		const uint32_t maxFramesInFlight = swapchain.GetMaxFramesInFlight();
 
-			VkCommandBufferAllocateInfo commandBufferAllocInfo {};
-		commandBufferAllocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-		commandBufferAllocInfo.commandBufferCount = 1;
-		commandBufferAllocInfo.commandPool = m_CommandPool;
-		commandBufferAllocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+		m_CommandBuffers.resize(maxFramesInFlight);
+		m_CommandPools.resize(maxFramesInFlight);
 
-		SB_ASSERT(vkAllocateCommandBuffers(m_Context->GetDevice()->GetLogicalDevice(), &commandBufferAllocInfo, &m_CommandBuffer) == VK_SUCCESS, "Failed to allocate command buffer")
+		for (uint32_t i = 0; i < maxFramesInFlight; i++)
+		{
+			VkCommandPoolCreateInfo commandPoolCreateInfo{};
+			commandPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+			commandPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+			commandPoolCreateInfo.queueFamilyIndex = m_Context->GetDevice()->GetQueueFamilyIndices().GraphicsFamily;
+
+			SB_ASSERT(vkCreateCommandPool(m_Context->GetDevice()->GetLogicalDevice(), &commandPoolCreateInfo, nullptr, &m_CommandPools[i]) == VK_SUCCESS, "Failed to create command pool")
+
+				VkCommandBufferAllocateInfo commandBufferAllocInfo {};
+			commandBufferAllocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+			commandBufferAllocInfo.commandBufferCount = 1;
+			commandBufferAllocInfo.commandPool = m_CommandPools[i];
+			commandBufferAllocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+
+			SB_ASSERT(vkAllocateCommandBuffers(m_Context->GetDevice()->GetLogicalDevice(), &commandBufferAllocInfo, &m_CommandBuffers[i]) == VK_SUCCESS, "Failed to allocate command buffer")
+		}
 	}
 
 	VulkanRenderer::~VulkanRenderer()
 	{
 		vkDeviceWaitIdle(m_Context->GetDevice()->GetLogicalDevice());
 
-		vkDestroyCommandPool(m_Context->GetDevice()->GetLogicalDevice(), m_CommandPool, nullptr);
+		for (uint32_t i = 0; i < m_Context->GetSwapchain()->GetMaxFramesInFlight(); i++)
+		{
+			vkDestroyCommandPool(m_Context->GetDevice()->GetLogicalDevice(), m_CommandPools[i], nullptr);
+		}
 
 		m_Context = nullptr;
 	}
@@ -36,14 +49,16 @@ namespace SkinBuilder
 
 		swapchain->AcquireNextFrame();
 
-		vkResetCommandBuffer(m_CommandBuffer, 0);
+		uint32_t currentFrame = swapchain->GetCurrentFrameIndex();
+
+		vkResetCommandBuffer(m_CommandBuffers[currentFrame], 0);
 
 		VkCommandBufferBeginInfo cmdBufferBeginInfo{};
 		cmdBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 		cmdBufferBeginInfo.flags = 0;
 		cmdBufferBeginInfo.pInheritanceInfo = nullptr;
 
-		vkBeginCommandBuffer(m_CommandBuffer, &cmdBufferBeginInfo);
+		vkBeginCommandBuffer(m_CommandBuffers[currentFrame], &cmdBufferBeginInfo);
 
 		VkRenderPassBeginInfo renderPassInfo{};
 		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -56,15 +71,17 @@ namespace SkinBuilder
 		renderPassInfo.clearValueCount = 1;
 		renderPassInfo.pClearValues = &clearVal;
 
-		vkCmdBeginRenderPass(m_CommandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+		vkCmdBeginRenderPass(m_CommandBuffers[currentFrame], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 		//wtf
-		vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Context->GetPipeline()->GetPipeline());
+		vkCmdBindPipeline(m_CommandBuffers[currentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, m_Context->GetPipeline()->GetPipeline());
 	}
 
 	void VulkanRenderer::End()
 	{
-		vkCmdEndRenderPass(m_CommandBuffer);
-		SB_ASSERT(vkEndCommandBuffer(m_CommandBuffer) == VK_SUCCESS, "Failed to unbind command buffer");
+		const VkCommandBuffer currentCommandBuffer = m_CommandBuffers[m_Context->GetSwapchain()->GetCurrentFrameIndex()];
+
+		vkCmdEndRenderPass(currentCommandBuffer);
+		SB_ASSERT(vkEndCommandBuffer(currentCommandBuffer) == VK_SUCCESS, "Failed to unbind command buffer");
 
 	}
 
@@ -85,13 +102,17 @@ namespace SkinBuilder
 		scissor.offset = { 0, 0 };
 		scissor.extent = swapchainExtent;
 
-		vkCmdSetViewport(m_CommandBuffer, 0, 1, &viewport);
-		vkCmdSetScissor(m_CommandBuffer, 0, 1, &scissor);
-		vkCmdDraw(m_CommandBuffer, 3, 1, 0, 0);
+		const VkCommandBuffer currentCommandBuffer = m_CommandBuffers[m_Context->GetSwapchain()->GetCurrentFrameIndex()];
+
+		vkCmdSetViewport(currentCommandBuffer, 0, 1, &viewport);
+		vkCmdSetScissor(currentCommandBuffer, 0, 1, &scissor);
+		vkCmdDraw(currentCommandBuffer, 3, 1, 0, 0);
 	}
 
 	void VulkanRenderer::Submit()
 	{
+		const VulkanSwapchain& swapchain = *m_Context->GetSwapchain();
+
 		VkSubmitInfo submitInfo{};
 		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
@@ -101,7 +122,7 @@ namespace SkinBuilder
 		submitInfo.pWaitSemaphores = waitSemaphores;
 		submitInfo.pWaitDstStageMask = pipelineStageFlags;
 		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &m_CommandBuffer;
+		submitInfo.pCommandBuffers = &m_CommandBuffers[swapchain.GetCurrentFrameIndex()];
 
 		VkSemaphore signalSemaphores[] = { m_Context->GetSwapchain()->GetRenderFinishedSemaphore() };
 		submitInfo.signalSemaphoreCount = 1;
