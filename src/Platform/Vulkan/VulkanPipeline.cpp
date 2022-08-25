@@ -85,13 +85,6 @@ namespace SkinBuilder
 
 		SB_ASSERT(vkCreatePipelineLayout(m_Device->GetLogicalDevice(), &pipelineLayout, nullptr, &m_PipelineLayout) == VK_SUCCESS, "Failed to create Vulkan pipeline layout")
 
-		VkPipelineRenderingCreateInfo dynamicRenderingInfo {};
-		dynamicRenderingInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
-		dynamicRenderingInfo.colorAttachmentCount = 1;
-		dynamicRenderingInfo.pColorAttachmentFormats = &m_Info.ColorAttachmentFormat;
-		dynamicRenderingInfo.depthAttachmentFormat = VK_FORMAT_UNDEFINED;
-		dynamicRenderingInfo.stencilAttachmentFormat = VK_FORMAT_UNDEFINED;
-
 
 		VkGraphicsPipelineCreateInfo pipelineInfo {};
 		pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -106,11 +99,10 @@ namespace SkinBuilder
 		pipelineInfo.pColorBlendState = &blendingInfo;
 		pipelineInfo.pDynamicState = &dynamicStateInfo;
 		pipelineInfo.layout = m_PipelineLayout;
-		pipelineInfo.renderPass = VK_NULL_HANDLE;
+		pipelineInfo.renderPass = m_Info.RenderPass;
 		pipelineInfo.subpass = 0;
 		pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 		pipelineInfo.basePipelineIndex = -1;
-		pipelineInfo.pNext = &dynamicRenderingInfo;
 
 		SB_ASSERT(vkCreateGraphicsPipelines(m_Device->GetLogicalDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_Pipeline) == VK_SUCCESS, "Failed to create Vulkan pipeline")
 	}

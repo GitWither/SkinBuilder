@@ -24,37 +24,39 @@ namespace SkinBuilder
 
 		VkSwapchainKHR m_Swapchain = VK_NULL_HANDLE;
 
+		VkRenderPass m_RenderPass = VK_NULL_HANDLE;
+
 		std::vector<VkImage> m_Images;
 		std::vector<VkImageView> m_ImageViews;
+		std::vector<VkFramebuffer> m_Framebuffers;
 
-		std::vector<VkSemaphore> m_ImageAvailableSemaphores;
-		std::vector<VkSemaphore> m_RenderFinishedSemaphores;
-		std::vector<VkFence> m_FrameInFlightFences;
+		VkSemaphore m_ImageAvailableSemaphore;
+		VkSemaphore m_RenderFinishedSemaphore;
+		VkFence m_FrameInFlightFence;
 
 		uint32_t m_CurrentImageIndex = 0;
-
-		uint32_t m_MaxFramesInFlight;
+		uint32_t m_ImageCount = 0;
 
 
 	public:
-		VulkanSwapchain(VkInstance instance, const Shared<VulkanDevice>& device, VkSurfaceKHR surface);
+		VulkanSwapchain(VkInstance instance, Shared<VulkanDevice> device, VkSurfaceKHR surface);
 		~VulkanSwapchain();
 
-		uint32_t GetMaxFramesInFlight() const { return m_MaxFramesInFlight; }
-		uint32_t GetCurrentFrame() const { return m_CurrentImageIndex; }
-
-		VkSemaphore GetImageAvailableSemaphore() const { return m_ImageAvailableSemaphores[m_CurrentImageIndex]; }
-		VkSemaphore GetRenderFinishedSemaphore() const { return m_RenderFinishedSemaphores[m_CurrentImageIndex]; }
-		VkFence GetFrameInFlightFence() const { return m_FrameInFlightFences[m_CurrentImageIndex]; }
-
-		VkImageView GetCurrentImageView() const { return m_ImageViews[m_CurrentImageIndex]; }
-		VkImage GetCurrentImage() const { return m_Images[m_CurrentImageIndex]; }
+		VkSemaphore GetImageAvailableSemaphore() const { return m_ImageAvailableSemaphore; }
+		VkSemaphore GetRenderFinishedSemaphore() const { return m_RenderFinishedSemaphore; }
+		VkFence GetFrameInFlightFence() const { return m_FrameInFlightFence; }
 
 		VkFormat GetImageFormat() const { return m_SurfaceFormat.format; }
+		VkRenderPass GetRenderPass() const { return m_RenderPass; }
+		VkFramebuffer GetFramebuffer(uint32_t imageIndex) const
+		{
+			return m_Framebuffers[imageIndex];
+		}
 
 		VkExtent2D GetExtent() const { return m_SwapExtent; }
 
 		uint32_t GetCurrentFrameIndex() const { return m_CurrentImageIndex; }
+		uint32_t GetImageCount() const { return m_ImageCount; }
 		void AcquireNextFrame();
 		void SwapBuffers();
 	};
