@@ -14,7 +14,7 @@ namespace SkinBuilder
 		Shared<VulkanSwapchain> m_Swapchain;
 		VkRenderPass m_RenderPass = VK_NULL_HANDLE;
 	public:
-		VulkanRenderPass(Shared<VulkanSwapchain> swapchain);
+		VulkanRenderPass();
 		~VulkanRenderPass();
 	};
 

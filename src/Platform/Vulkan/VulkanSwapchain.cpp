@@ -229,13 +229,13 @@ namespace SkinBuilder
 	VulkanSwapchain::~VulkanSwapchain()
 	{
 		vkDestroyRenderPass(m_Device->GetLogicalDevice(), m_RenderPass, nullptr);
-		for (const auto& imageView : m_ImageViews)
+		for (uint32_t i = 0; i < m_MaxFramesInFlight; i++)
 		{
-			vkDestroyImageView(m_Device->GetLogicalDevice(), imageView, nullptr);
-		}
-		for (uint32_t i = 0; i < m_Framebuffers.size(); i++)
-		{
+			vkDestroyImageView(m_Device->GetLogicalDevice(), m_ImageViews[i], nullptr);
 			vkDestroyFramebuffer(m_Device->GetLogicalDevice(), m_Framebuffers[i], nullptr);
+			vkDestroySemaphore(m_Device->GetLogicalDevice(), m_ImageAvailableSemaphores[i], nullptr);
+			vkDestroySemaphore(m_Device->GetLogicalDevice(), m_RenderFinishedSemaphores[i], nullptr);
+			vkDestroyFence(m_Device->GetLogicalDevice(), m_FrameInFlightFences[i], nullptr);
 		}
 		vkDestroySwapchainKHR(m_Device->GetLogicalDevice(), m_Swapchain, nullptr);
 		vkDestroySurfaceKHR(m_Instance, m_Surface, nullptr);

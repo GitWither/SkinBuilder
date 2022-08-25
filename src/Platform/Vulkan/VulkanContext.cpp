@@ -82,6 +82,7 @@ namespace SkinBuilder
 
 	VulkanContext::~VulkanContext()
 	{
+		m_Pipeline = nullptr;
 		m_Swapchain = nullptr;
 		m_Device = nullptr;
 

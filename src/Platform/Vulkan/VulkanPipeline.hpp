@@ -26,7 +26,7 @@ namespace SkinBuilder
 	public:
 		VkPipeline GetPipeline() const { return m_Pipeline; }
 
-		VulkanPipeline(VulkanPipelineInfo info, Shared<VulkanDevice> device);
+		VulkanPipeline(const VulkanPipelineInfo& info, const Shared<VulkanDevice>& device);
 		~VulkanPipeline();
 	};
 }

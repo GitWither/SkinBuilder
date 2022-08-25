@@ -20,7 +20,7 @@ namespace SkinBuilder
 
 			SB_ASSERT(vkCreateCommandPool(m_Context->GetDevice()->GetLogicalDevice(), &commandPoolCreateInfo, nullptr, &m_CommandPools[i]) == VK_SUCCESS, "Failed to create command pool")
 
-				VkCommandBufferAllocateInfo commandBufferAllocInfo {};
+			VkCommandBufferAllocateInfo commandBufferAllocInfo {};
 			commandBufferAllocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 			commandBufferAllocInfo.commandBufferCount = 1;
 			commandBufferAllocInfo.commandPool = m_CommandPools[i];
@@ -51,7 +51,8 @@ namespace SkinBuilder
 
 		uint32_t currentFrame = swapchain->GetCurrentFrameIndex();
 
-		vkResetCommandBuffer(m_CommandBuffers[currentFrame], 0);
+		vkResetCommandPool(m_Context->GetDevice()->GetLogicalDevice(), m_CommandPools[currentFrame], 0);
+		//vkResetCommandBuffer(m_CommandBuffers[currentFrame], 0);
 
 		VkCommandBufferBeginInfo cmdBufferBeginInfo{};
 		cmdBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;

@@ -10,7 +10,7 @@ namespace SkinBuilder
 	};
 
 
-	VulkanPipeline::VulkanPipeline(VulkanPipelineInfo info, Shared<VulkanDevice> device) : m_Info(info), m_Device(device)
+	VulkanPipeline::VulkanPipeline(const VulkanPipelineInfo& info, const Shared<VulkanDevice>& device) : m_Info(info), m_Device(device)
 	{
 		VkPipelineDynamicStateCreateInfo dynamicStateInfo{};
 		dynamicStateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
@@ -109,8 +109,11 @@ namespace SkinBuilder
 
 	VulkanPipeline::~VulkanPipeline()
 	{
+
 		vkDestroyPipeline(m_Device->GetLogicalDevice(), m_Pipeline, nullptr);
 		vkDestroyPipelineLayout(m_Device->GetLogicalDevice(), m_PipelineLayout, nullptr);
+
+		m_Device = nullptr;
 	}
 
 
