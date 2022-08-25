@@ -14,6 +14,8 @@ namespace SkinBuilder
 
 	SkinBuilder::SkinBuilder(const uint32_t width, const uint32_t height, const std::string& title)
 	{
+		Logger::Initialize();
+
 		m_Window = Window::Create(width, height, title);
 		m_Window->Initialize();
 
