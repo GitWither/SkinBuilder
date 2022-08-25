@@ -18,7 +18,7 @@ namespace SkinBuilder
 		glfwInit();
 
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-		glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+		//glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
 		m_Window = glfwCreateWindow(static_cast<int>(m_Width), static_cast<int>(m_Height), m_Title.c_str(), nullptr, nullptr);
 	}

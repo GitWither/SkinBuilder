@@ -39,8 +39,9 @@ namespace SkinBuilder
 
 		uint32_t m_MaxFramesInFlight;
 
+		void Invalidate();
 	public:
-		VulkanSwapchain(VkInstance instance, Shared<VulkanDevice> device, VkSurfaceKHR surface);
+		VulkanSwapchain(VkInstance instance, const Shared<VulkanDevice>& device, VkSurfaceKHR surface);
 		~VulkanSwapchain();
 
 		VkSemaphore GetImageAvailableSemaphore() const { return m_ImageAvailableSemaphores[m_CurrentImageIndex]; }
@@ -58,8 +59,11 @@ namespace SkinBuilder
 
 		uint32_t GetCurrentFrameIndex() const { return m_CurrentImageIndex; }
 		uint32_t GetImageCount() const { return m_ImageCount; }
+		uint32_t GetMaxFramesInFlight() const { return m_MaxFramesInFlight; }
+
 		void AcquireNextFrame();
 		void SwapBuffers();
-		uint32_t GetMaxFramesInFlight() const { return m_MaxFramesInFlight; }
+
+		void Resize(uint32_t newWidth, uint32_t newHeight);
 	};
 }

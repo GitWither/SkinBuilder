@@ -4,8 +4,21 @@
 
 namespace SkinBuilder
 {
-	VulkanSwapchain::VulkanSwapchain(VkInstance instance, Shared<VulkanDevice> device, VkSurfaceKHR surface) : m_Instance(instance), m_Device(std::move(device)), m_Surface(surface)
+	VulkanSwapchain::VulkanSwapchain(VkInstance instance, const Shared<VulkanDevice>& device, VkSurfaceKHR surface) : m_Instance(instance), m_Device(device), m_Surface(surface)
 	{
+		Invalidate();
+	}
+
+
+	void VulkanSwapchain::Invalidate()
+	{
+		VkSwapchainKHR oldSwapChain = m_Swapchain;
+
+		if (oldSwapChain)
+		{
+			vkDestroySwapchainKHR(m_Device->GetLogicalDevice(), oldSwapChain, nullptr);
+		}
+
 		//TODO: Assert this
 		vkGetPhysicalDeviceSurfaceCapabilitiesKHR(m_Device->GetPhysicalDevice(), m_Surface, &m_SurfaceCapabilities);
 
@@ -87,7 +100,7 @@ namespace SkinBuilder
 		createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
 		const QueueFamilyIndices queueFamilies = m_Device->GetQueueFamilyIndices();
-		const std::array queueFamilyIndices = {queueFamilies.GraphicsFamily, queueFamilies.PresentFamily};
+		const std::array queueFamilyIndices = { queueFamilies.GraphicsFamily, queueFamilies.PresentFamily };
 
 		if (queueFamilies.GraphicsFamily != queueFamilies.PresentFamily)
 		{
@@ -110,7 +123,7 @@ namespace SkinBuilder
 
 		SB_ASSERT(vkCreateSwapchainKHR(m_Device->GetLogicalDevice(), &createInfo, nullptr, &m_Swapchain) == VK_SUCCESS, "Failed to create swap chain")
 
-		vkGetSwapchainImagesKHR(m_Device->GetLogicalDevice(), m_Swapchain, &imageCount, nullptr);
+			vkGetSwapchainImagesKHR(m_Device->GetLogicalDevice(), m_Swapchain, &imageCount, nullptr);
 
 		m_Images.resize(imageCount);
 		m_ImageViews.resize(imageCount);
@@ -233,9 +246,18 @@ namespace SkinBuilder
 	void VulkanSwapchain::AcquireNextFrame()
 	{
 		vkWaitForFences(m_Device->GetLogicalDevice(), 1, &m_FrameInFlightFences[m_CurrentImageIndex], VK_TRUE, UINT64_MAX);
-		vkResetFences(m_Device->GetLogicalDevice(), 1, &m_FrameInFlightFences[m_CurrentImageIndex]);
 
-		vkAcquireNextImageKHR(m_Device->GetLogicalDevice(), m_Swapchain, UINT64_MAX, m_ImageAvailableSemaphores[m_CurrentImageIndex], VK_NULL_HANDLE, &m_CurrentImageIndex);
+		VkResult result = vkAcquireNextImageKHR(m_Device->GetLogicalDevice(), m_Swapchain, UINT64_MAX, m_ImageAvailableSemaphores[m_CurrentImageIndex], VK_NULL_HANDLE, &m_CurrentImageIndex);
+		if (result == VK_ERROR_OUT_OF_DATE_KHR)
+		{
+			Invalidate();
+		}
+		else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
+		{
+			SB_ERROR("Failed to acquire new swap chain image");
+		}
+
+		vkResetFences(m_Device->GetLogicalDevice(), 1, &m_FrameInFlightFences[m_CurrentImageIndex]);
 	}
 
 	void VulkanSwapchain::SwapBuffers()
@@ -253,8 +275,22 @@ namespace SkinBuilder
 		presentInfo.pImageIndices = &m_CurrentImageIndex;
 		presentInfo.pResults = nullptr;
 
-		SB_ASSERT(vkQueuePresentKHR(m_Device->GetGraphicsQueue(), &presentInfo) == VK_SUCCESS, "Failed to present swapchain");
+		VkResult result = vkQueuePresentKHR(m_Device->GetGraphicsQueue(), &presentInfo);
+		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR)
+		{
+			Invalidate();
+		}
+		else if (result != VK_SUCCESS)
+		{
+			SB_ERROR("Failed to present swap chain image");
+		}
 
 		m_CurrentImageIndex = (m_CurrentImageIndex + 1) % m_MaxFramesInFlight;
+	}
+
+	void VulkanSwapchain::Resize(uint32_t newWidth, uint32_t newHeight)
+	{
+		vkDeviceWaitIdle(m_Device->GetLogicalDevice());
+		Invalidate(/*TODO: pass in the new size here*/);
 	}
 }
