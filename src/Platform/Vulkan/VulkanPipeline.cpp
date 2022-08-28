@@ -9,6 +9,19 @@ namespace SkinBuilder
 		VK_DYNAMIC_STATE_SCISSOR
 	};
 
+	constexpr static VkFormat DataTypeToVkFormat(DataType type)
+	{
+		switch (type)
+		{
+			case DataType::Float: return VK_FORMAT_R32_SFLOAT;
+			case DataType::Vector2: return VK_FORMAT_R32G32_SFLOAT;
+			case DataType::Vector3: return VK_FORMAT_R32G32B32_SFLOAT;
+			case DataType::Vector4: return VK_FORMAT_R32G32B32A32_SFLOAT;
+		}
+
+		return VK_FORMAT_UNDEFINED;
+	}
+
 
 	VulkanPipeline::VulkanPipeline(const VulkanPipelineInfo& info, const Shared<VulkanDevice>& device) : m_Info(info), m_Device(device)
 	{
@@ -17,12 +30,28 @@ namespace SkinBuilder
 		dynamicStateInfo.dynamicStateCount = static_cast<uint32_t>(s_DynamicStates.size());
 		dynamicStateInfo.pDynamicStates = s_DynamicStates.data();
 
+		VkVertexInputBindingDescription vertexInputDescription{};
+		vertexInputDescription.binding = 0;
+		vertexInputDescription.stride = m_Info.Layout.GetStride();
+		vertexInputDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+		const auto& attributes = m_Info.Layout.GetAttributes();
+		std::vector<VkVertexInputAttributeDescription> attributeDescriptions(attributes.size());
+
+		for (size_t i = 0; i < attributes.size(); i++)
+		{
+			attributeDescriptions[i].binding = 0;
+			attributeDescriptions[i].location = attributes[i].Location;
+			attributeDescriptions[i].format = DataTypeToVkFormat(attributes[i].Type);
+			attributeDescriptions[i].offset = attributes[i].Offset;
+		}
+
 		VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
 		vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-		vertexInputInfo.vertexBindingDescriptionCount = 0;
-		vertexInputInfo.pVertexBindingDescriptions = nullptr;
-		vertexInputInfo.vertexAttributeDescriptionCount = 0;
-		vertexInputInfo.pVertexAttributeDescriptions = nullptr;
+		vertexInputInfo.vertexBindingDescriptionCount = 1;
+		vertexInputInfo.pVertexBindingDescriptions = &vertexInputDescription;
+		vertexInputInfo.vertexAttributeDescriptionCount = attributeDescriptions.size();
+		vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
 
 		VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
 		inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;

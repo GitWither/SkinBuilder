@@ -1,4 +1,5 @@
 #include "Platform/Vulkan/VulkanContext.hpp"
+#include "Platform/Vulkan/VulkanAllocator.hpp"
 #include "Core/Window.hpp"
 
 #include <GLFW/glfw3.h>
@@ -6,6 +7,8 @@
 #include <vector>
 #include <array>
 #include <iostream>
+
+#include "Graphics/Vertex.hpp"
 
 namespace SkinBuilder
 {
@@ -73,15 +76,23 @@ namespace SkinBuilder
 		m_Device = MakeShared<VulkanDevice>(m_Instance, m_Surface);
 		m_Swapchain = MakeShared<VulkanSwapchain>(m_Instance, m_Device, m_Surface);
 
+		VulkanAllocator::Initialize(m_Instance, m_Device);
+
 		VulkanPipelineInfo pipelineInfo;
 		pipelineInfo.RenderPass = m_Swapchain->GetRenderPass();
 		pipelineInfo.Shader = MakeShared<VulkanShader>("main", m_Device);
+		pipelineInfo.Layout = {
+			{ 0, DataType::Vector3, offsetof(Vertex, Position) },
+			{ 1, DataType::Vector4, offsetof(Vertex, Color)}
+		};
 
 		m_Pipeline = MakeShared<VulkanPipeline>(pipelineInfo, m_Device);
 	}
 
 	VulkanContext::~VulkanContext()
 	{
+		VulkanAllocator::Shutdown();
+
 		m_Pipeline = nullptr;
 		m_Swapchain = nullptr;
 		m_Device = nullptr;

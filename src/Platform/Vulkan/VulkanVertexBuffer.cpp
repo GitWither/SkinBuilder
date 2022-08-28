@@ -1,26 +1,27 @@
-#include "Platform/Vulkan/VulkanIndexBuffer.hpp"
+#include "Platform/Vulkan/VulkanVertexBuffer.hpp"
 
 namespace SkinBuilder
 {
-	VulkanIndexBuffer::VulkanIndexBuffer(uint32_t count, uint32_t* data, const Shared<VulkanDevice>& device) : m_IndexCount(count)
+	VulkanVertexBuffer::VulkanVertexBuffer(uint32_t count, void* data, const Shared<VulkanDevice> device)
 	{
-		VkBufferCreateInfo bufferInfo{};
-		bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-		bufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-		bufferInfo.size = count * sizeof(uint32_t);
-		bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		VkBufferCreateInfo bufferCreateInfo{};
+		bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+		bufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+		bufferCreateInfo.size = count;
+		bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
 		VkBuffer buffer;
-		VmaAllocation bufferAllocation = VulkanAllocator::AllocateBuffer(&bufferInfo, VMA_MEMORY_USAGE_CPU_TO_GPU, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &buffer);
+		VmaAllocation bufferAllocation = VulkanAllocator::AllocateBuffer(&bufferCreateInfo, VMA_MEMORY_USAGE_CPU_TO_GPU, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &buffer);
+
 
 		void* mappedMemory;
 		VulkanAllocator::MapMemory(bufferAllocation, &mappedMemory);
 		std::memcpy(mappedMemory, data, count * sizeof(uint32_t));
 		VulkanAllocator::UnmapMemory(bufferAllocation);
-		
+
 		VkBufferCreateInfo actualBufferInfo{};
 		actualBufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-		actualBufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+		actualBufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
 		actualBufferInfo.size = count * sizeof(uint32_t);
 		actualBufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 		m_BufferAllocation = VulkanAllocator::AllocateBuffer(&actualBufferInfo, VMA_MEMORY_USAGE_CPU_TO_GPU, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &m_Buffer);
@@ -50,7 +51,7 @@ namespace SkinBuilder
 		VkBufferCopy bufferCopy{};
 		bufferCopy.srcOffset = 0;
 		bufferCopy.dstOffset = 0;
-		bufferCopy.size = count * sizeof(uint32_t);
+		bufferCopy.size = count;
 		vkCmdCopyBuffer(commandBuffer, buffer, m_Buffer, 1, &bufferCopy);
 
 		VK_ASSERT(vkEndCommandBuffer(commandBuffer));
@@ -66,16 +67,17 @@ namespace SkinBuilder
 		vkDestroyCommandPool(device->GetLogicalDevice(), commandPool, nullptr);
 	}
 
-	VulkanIndexBuffer::~VulkanIndexBuffer()
+	VulkanVertexBuffer::~VulkanVertexBuffer()
 	{
 		VulkanAllocator::DestroyBuffer(m_Buffer, m_BufferAllocation);
 	}
 
-	void VulkanIndexBuffer::Bind(VkCommandBuffer buffer)
-	{
-		vkCmdBindIndexBuffer(buffer, m_Buffer, 0, VK_INDEX_TYPE_UINT32);
-	}
 
+	void VulkanVertexBuffer::Bind(VkCommandBuffer commandBuffer)
+	{
+		VkDeviceSize offsets[] = { 0 };
+		vkCmdBindVertexBuffers(commandBuffer, 0, 1, &m_Buffer, offsets);
+	}
 
 
 }

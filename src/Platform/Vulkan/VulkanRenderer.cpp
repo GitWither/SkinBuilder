@@ -1,8 +1,19 @@
 #include <Platform/Vulkan/VulkanRenderer.hpp>
 
+#include "Graphics/Vertex.hpp"
+
 namespace SkinBuilder
 {
-	VulkanRenderer::VulkanRenderer(const Shared<VulkanContext>& context) : m_Context(context)
+	static Vertex s_TriangleVertices[] = {
+	{ {  0.5f, -0.5f, 0.0f }, { 1.0f, 0.0f, 0.0f, 1.0f } }, // Top-Right
+	{ {  0.5f,  0.5f, 0.0f }, { 1.0f, 0.0f, 0.0f, 1.0f } }, // Bottom-Right
+	{ { -0.5f,  0.5f, 0.0f }, { 1.0f, 0.0f, 0.0f, 1.0f } }, // Bottom-Left
+	{ { -0.5f, -0.5f, 0.0f }, { 0.0f, 0.0f, 1.0f, 1.0f } }, // Top-Left
+	};
+
+	static uint32_t s_TriangleIndices[] = { 0, 1, 2, 2, 3, 0 };
+
+	VulkanRenderer::VulkanRenderer(const Shared<VulkanContext>& context) : m_Context(context), m_IndexBuffer(6, s_TriangleIndices, context->GetDevice()), m_VertexBuffer(4 * sizeof(Vertex), s_TriangleVertices, context->GetDevice())
 	{
 		const VulkanSwapchain& swapchain = *context->GetSwapchain();
 
@@ -28,6 +39,9 @@ namespace SkinBuilder
 
 			SB_ASSERT(vkAllocateCommandBuffers(m_Context->GetDevice()->GetLogicalDevice(), &commandBufferAllocInfo, &m_CommandBuffers[i]) == VK_SUCCESS, "Failed to allocate command buffer")
 		}
+
+		//m_VertexBuffer = VulkanVertexBuffer(4 * sizeof(Vertex), s_TriangleVertices, m_Context->GetDevice());
+		//m_IndexBuffer = VulkanIndexBuffer(6, s_TriangleIndices, m_Context->GetDevice());
 	}
 
 	VulkanRenderer::~VulkanRenderer()
@@ -75,6 +89,9 @@ namespace SkinBuilder
 		vkCmdBeginRenderPass(m_CommandBuffers[currentFrame], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 		//wtf
 		vkCmdBindPipeline(m_CommandBuffers[currentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, m_Context->GetPipeline()->GetPipeline());
+
+		m_IndexBuffer.Bind(m_CommandBuffers[currentFrame]);
+		m_VertexBuffer.Bind(m_CommandBuffers[currentFrame]);
 	}
 
 	void VulkanRenderer::End()
@@ -107,7 +124,8 @@ namespace SkinBuilder
 
 		vkCmdSetViewport(currentCommandBuffer, 0, 1, &viewport);
 		vkCmdSetScissor(currentCommandBuffer, 0, 1, &scissor);
-		vkCmdDraw(currentCommandBuffer, 3, 1, 0, 0);
+		//vkCmdDraw(currentCommandBuffer, 3, 1, 0, 0);
+		vkCmdDrawIndexed(currentCommandBuffer, m_IndexBuffer.GetCount(), 1, 0, 0, 0);
 	}
 
 	void VulkanRenderer::Submit()

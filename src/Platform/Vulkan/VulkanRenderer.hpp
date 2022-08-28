@@ -9,6 +9,8 @@
 
 #include "VulkanCommandBuffer.hpp"
 #include "VulkanContext.hpp"
+#include "VulkanIndexBuffer.hpp"
+#include "VulkanVertexBuffer.hpp"
 
 namespace SkinBuilder
 {
@@ -17,6 +19,9 @@ namespace SkinBuilder
 	private:
 		std::vector<VkCommandPool> m_CommandPools;
 		std::vector<VkCommandBuffer> m_CommandBuffers;
+
+		VulkanIndexBuffer m_IndexBuffer;
+		VulkanVertexBuffer m_VertexBuffer;
 
 		Shared<VulkanContext> m_Context;
 	public:

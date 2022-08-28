@@ -2,6 +2,8 @@
 
 #include <memory>
 
+#include <vulkan/vulkan.h>
+
 #include <Core/Logger.hpp>
 #include <Core/Memory.hpp>
 
@@ -30,6 +32,8 @@
 
 #if SKINBUILDER_DEBUG
 #define SB_ASSERT(check, ...) { if (!check) { SB_DEBUG_BREAK(); }}
+#define VK_ASSERT(check) { if ((check) != VK_SUCCESS) { SB_DEBUG_BREAK();}}
 #else
 #define SB_ASSERT(check, ...)
+#define VK_ASSERT(check)
 #endif

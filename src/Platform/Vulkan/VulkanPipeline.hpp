@@ -3,6 +3,7 @@
 #include <array>
 
 #include "Core/Core.hpp"
+#include "Graphics/VertexBufferLayout.hpp"
 #include "Platform/Vulkan/VulkanDevice.hpp"
 #include "Platform/Vulkan/VulkanShader.hpp"
 
@@ -13,6 +14,7 @@ namespace SkinBuilder
 	struct VulkanPipelineInfo
 	{
 		VkRenderPass RenderPass;
+		VertexBufferLayout Layout;
 		Shared<VulkanShader> Shader;
 	};
 
