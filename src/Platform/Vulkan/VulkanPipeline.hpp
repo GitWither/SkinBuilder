@@ -25,7 +25,10 @@ namespace SkinBuilder
 		Shared<VulkanDevice> m_Device;
 		VkPipelineLayout m_PipelineLayout;
 		VkPipeline m_Pipeline;
+		VkDescriptorSetLayout m_DescriptorSetLayout;
 	public:
+		VkDescriptorSetLayout GetDescriptorSetLayout() const { return m_DescriptorSetLayout; }
+		VkPipelineLayout GetPipelineLayout() const { return m_PipelineLayout; }
 		VkPipeline GetPipeline() const { return m_Pipeline; }
 
 		VulkanPipeline(const VulkanPipelineInfo& info, const Shared<VulkanDevice>& device);

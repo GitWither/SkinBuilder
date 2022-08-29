@@ -6,6 +6,7 @@
 #include "Core/SkinBuilder.hpp"
 #include "Platform/Vulkan/VulkanRenderPass.hpp"
 #include "Platform/Vulkan/VulkanPipeline.hpp"
+#include "Platform/Vulkan/VulkanUniformBufferSet.hpp"
 
 #include "VulkanCommandBuffer.hpp"
 #include "VulkanContext.hpp"
@@ -20,10 +21,14 @@ namespace SkinBuilder
 		std::vector<VkCommandPool> m_CommandPools;
 		std::vector<VkCommandBuffer> m_CommandBuffers;
 
+		std::vector<VkDescriptorSetLayout> m_DescriptorSetLayouts;
+		std::vector<VkDescriptorSet> m_DescriptorSets;
+
 		VulkanIndexBuffer m_IndexBuffer;
 		VulkanVertexBuffer m_VertexBuffer;
 
 		Shared<VulkanContext> m_Context;
+		VulkanUniformBufferSet m_UniformBufferSet;
 	public:
 		VulkanRenderer(const Shared<VulkanContext>& context);
 		~VulkanRenderer();

@@ -105,10 +105,26 @@ namespace SkinBuilder
 		blendingInfo.blendConstants[2] = 0.0f;
 		blendingInfo.blendConstants[3] = 0.0f;
 
+		VkDescriptorSetLayoutBinding uboLayoutBinding{};
+		uboLayoutBinding.binding = 0;
+		uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		uboLayoutBinding.descriptorCount = 1;
+		uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+		uboLayoutBinding.pImmutableSamplers = nullptr;
+
+
+		VkDescriptorSetLayoutCreateInfo descriptorSetLayoutInfo{};
+		descriptorSetLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+		descriptorSetLayoutInfo.bindingCount = 1;
+		descriptorSetLayoutInfo.pBindings = &uboLayoutBinding;
+
+		VK_ASSERT(vkCreateDescriptorSetLayout(m_Device->GetLogicalDevice(), &descriptorSetLayoutInfo, nullptr, &m_DescriptorSetLayout));
+
 		VkPipelineLayoutCreateInfo pipelineLayout{};
 		pipelineLayout.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-		pipelineLayout.setLayoutCount = 0;
-		pipelineLayout.pSetLayouts = nullptr;
+		pipelineLayout.setLayoutCount = 1;
+		pipelineLayout.pSetLayouts = &m_DescriptorSetLayout;
+
 		pipelineLayout.pushConstantRangeCount = 0;
 		pipelineLayout.pPushConstantRanges = nullptr;
 

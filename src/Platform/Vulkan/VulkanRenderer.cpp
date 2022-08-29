@@ -2,6 +2,8 @@
 
 #include "Graphics/Vertex.hpp"
 
+#include <glm/gtc/matrix_transform.hpp>
+
 namespace SkinBuilder
 {
 	static Vertex s_TriangleVertices[] = {
@@ -13,7 +15,12 @@ namespace SkinBuilder
 
 	static uint32_t s_TriangleIndices[] = { 0, 1, 2, 2, 3, 0 };
 
-	VulkanRenderer::VulkanRenderer(const Shared<VulkanContext>& context) : m_Context(context), m_IndexBuffer(6, s_TriangleIndices, context->GetDevice()), m_VertexBuffer(4 * sizeof(Vertex), s_TriangleVertices, context->GetDevice())
+	VulkanRenderer::VulkanRenderer(const Shared<VulkanContext>& context)
+	:
+	m_IndexBuffer(6, s_TriangleIndices, context->GetDevice()),
+	m_VertexBuffer(4 * sizeof(Vertex), s_TriangleVertices, context->GetDevice()),
+	m_Context(context),
+	m_UniformBufferSet(m_Context->GetSwapchain()->GetMaxFramesInFlight())
 	{
 		const VulkanSwapchain& swapchain = *context->GetSwapchain();
 
@@ -21,6 +28,64 @@ namespace SkinBuilder
 
 		m_CommandBuffers.resize(maxFramesInFlight);
 		m_CommandPools.resize(maxFramesInFlight);
+
+		struct CameraData
+		{
+			glm::mat4 view;
+			glm::mat4 projection;
+			glm::mat4 model;
+		};
+
+		m_UniformBufferSet.Create(sizeof(CameraData) * 3, 0);
+
+		VkDescriptorPoolSize poolSize{};
+		poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		poolSize.descriptorCount = maxFramesInFlight;
+
+		VkDescriptorPoolCreateInfo poolInfo{};
+		poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+		poolInfo.poolSizeCount = 1;
+		poolInfo.pPoolSizes = &poolSize;
+		poolInfo.maxSets = maxFramesInFlight;
+
+		VkDescriptorPool descriptorPool;
+
+		VK_ASSERT(vkCreateDescriptorPool(m_Context->GetDevice()->GetLogicalDevice(), &poolInfo, nullptr, &descriptorPool));
+
+		m_DescriptorSetLayouts.resize(maxFramesInFlight, m_Context->GetPipeline()->GetDescriptorSetLayout());
+
+		VkDescriptorSetAllocateInfo descriptorSetAllocateInfo{};
+		descriptorSetAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+		descriptorSetAllocateInfo.descriptorPool = descriptorPool;
+		descriptorSetAllocateInfo.descriptorSetCount = maxFramesInFlight;
+		descriptorSetAllocateInfo.pSetLayouts = m_DescriptorSetLayouts.data();
+
+		m_DescriptorSets.resize(maxFramesInFlight);
+
+		vkAllocateDescriptorSets(m_Context->GetDevice()->GetLogicalDevice(), &descriptorSetAllocateInfo, m_DescriptorSets.data());
+
+		for (size_t i = 0; i < maxFramesInFlight; i++)
+		{
+			VkDescriptorBufferInfo bufferInfo{};
+			bufferInfo.buffer = m_UniformBufferSet.Get(0, i)->GetBuffer();
+			bufferInfo.offset = 0;
+			bufferInfo.range = sizeof(CameraData);
+
+			VkWriteDescriptorSet descriptorWrite{};
+			descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			descriptorWrite.dstSet = m_DescriptorSets[i];
+			descriptorWrite.dstBinding = 0;
+			descriptorWrite.dstArrayElement = 0;
+			descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			descriptorWrite.descriptorCount = 1;
+			descriptorWrite.pBufferInfo = &bufferInfo;
+			descriptorWrite.pImageInfo = nullptr;
+			descriptorWrite.pTexelBufferView = nullptr;
+
+			vkUpdateDescriptorSets(m_Context->GetDevice()->GetLogicalDevice(), 1, &descriptorWrite, 0, nullptr);
+		}
+
+
 
 		for (uint32_t i = 0; i < maxFramesInFlight; i++)
 		{
@@ -64,6 +129,21 @@ namespace SkinBuilder
 		swapchain->AcquireNextFrame();
 
 		uint32_t currentFrame = swapchain->GetCurrentFrameIndex();
+
+
+		struct CameraData
+		{
+			glm::mat4 view;
+			glm::mat4 projection;
+			glm::mat4 model;
+		} cameraData{};
+
+		cameraData.model = glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+		cameraData.projection = glm::perspective(glm::radians(45.0f), 16 / 9.0f, 0.1f, 10.0f);
+		cameraData.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+
+		Shared<VulkanUniformBuffer> uniformBuffer = m_UniformBufferSet.Get(0, currentFrame);
+		uniformBuffer->SetData(&cameraData, sizeof(cameraData));
 
 		vkResetCommandPool(m_Context->GetDevice()->GetLogicalDevice(), m_CommandPools[currentFrame], 0);
 		//vkResetCommandBuffer(m_CommandBuffers[currentFrame], 0);
@@ -125,6 +205,7 @@ namespace SkinBuilder
 		vkCmdSetViewport(currentCommandBuffer, 0, 1, &viewport);
 		vkCmdSetScissor(currentCommandBuffer, 0, 1, &scissor);
 		//vkCmdDraw(currentCommandBuffer, 3, 1, 0, 0);
+		vkCmdBindDescriptorSets(currentCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Context->GetPipeline()->GetPipelineLayout(), 0, 1, &m_DescriptorSets[m_Context->GetSwapchain()->GetCurrentFrameIndex()], 0, nullptr);
 		vkCmdDrawIndexed(currentCommandBuffer, m_IndexBuffer.GetCount(), 1, 0, 0, 0);
 	}
 
