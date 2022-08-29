@@ -19,6 +19,8 @@ namespace SkinBuilder
 		uint32_t GetHeight() const override { return m_Width; }
 		uint32_t GetWidth() const override { return m_Height; }
 		void* GetNative() const override { return m_Window; }
+		glm::vec2 GetMousePos() const override;
+		bool IsMouseButtonPressed(const MouseCode code) const override;
 
 
 	private:

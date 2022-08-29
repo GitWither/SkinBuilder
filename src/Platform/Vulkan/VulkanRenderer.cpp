@@ -29,14 +29,7 @@ namespace SkinBuilder
 		m_CommandBuffers.resize(maxFramesInFlight);
 		m_CommandPools.resize(maxFramesInFlight);
 
-		struct CameraData
-		{
-			glm::mat4 view;
-			glm::mat4 projection;
-			glm::mat4 model;
-		};
-
-		m_UniformBufferSet.Create(sizeof(CameraData) * 3, 0);
+		m_UniformBufferSet.Create(sizeof(glm::mat4), 0);
 
 		VulkanPipelineInfo pipelineInfo;
 		pipelineInfo.RenderPass = m_Context->GetSwapchain()->GetRenderPass();
@@ -81,7 +74,7 @@ namespace SkinBuilder
 			VkDescriptorBufferInfo bufferInfo{};
 			bufferInfo.buffer = m_UniformBufferSet.Get(0, i)->GetBuffer();
 			bufferInfo.offset = 0;
-			bufferInfo.range = sizeof(CameraData);
+			bufferInfo.range = sizeof(glm::mat4);
 
 			VkWriteDescriptorSet descriptorWrite{};
 			descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -133,7 +126,7 @@ namespace SkinBuilder
 		m_Context = nullptr;
 	}
 
-	void VulkanRenderer::Begin()
+	void VulkanRenderer::Begin(const Camera& camera)
 	{
 
 		auto swapchain = m_Context->GetSwapchain();
@@ -143,21 +136,10 @@ namespace SkinBuilder
 		uint32_t currentFrame = swapchain->GetCurrentFrameIndex();
 
 
-		struct CameraData
-		{
-			glm::mat4 view;
-			glm::mat4 projection;
-			glm::mat4 model;
-		} cameraData{};
-
-		cameraData.model = glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-		cameraData.projection = glm::perspective(glm::radians(45.0f), swapchain->GetExtent().width / static_cast<float>(swapchain->GetExtent().height), 0.1f, 10.0f);
-		cameraData.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-
-		cameraData.projection[1][1] *= -1;
+		glm::mat4 viewProjection = camera.GetViewProjection();
 
 		Shared<VulkanUniformBuffer> uniformBuffer = m_UniformBufferSet.Get(0, currentFrame);
-		uniformBuffer->SetData(&cameraData, sizeof(cameraData));
+		uniformBuffer->SetData(&viewProjection, sizeof(glm::mat4));
 
 		vkResetCommandPool(m_Context->GetDevice()->GetLogicalDevice(), m_CommandPools[currentFrame], 0);
 		//vkResetCommandBuffer(m_CommandBuffers[currentFrame], 0);

@@ -38,7 +38,7 @@ namespace SkinBuilder
 		VkCommandPool GetCommandPool() const { return m_CommandPools[m_Context->GetSwapchain()->GetCurrentFrameIndex()]; }
 		VkCommandBuffer GetCommandBuffer() const { return m_CommandBuffers[m_Context->GetSwapchain()->GetCurrentFrameIndex()]; }
 
-		void Begin();
+		void Begin(const Camera& camera);
 		void End();
 
 		void Draw(float width, float height);

@@ -32,4 +32,19 @@ namespace SkinBuilder
 	{
 		return glfwWindowShouldClose(m_Window);
 	}
+
+	bool WindowsWindow::IsMouseButtonPressed(const MouseCode code) const
+	{
+		const int state = glfwGetMouseButton(m_Window, code);
+		return state == GLFW_PRESS;
+	}
+
+
+	glm::vec2 WindowsWindow::GetMousePos() const
+	{
+		double xPos, yPos;
+		glfwGetCursorPos(m_Window, &xPos, &yPos);
+
+		return glm::vec2{ xPos, yPos };
+	}
 }

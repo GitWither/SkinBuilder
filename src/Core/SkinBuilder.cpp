@@ -20,6 +20,8 @@ namespace SkinBuilder
 		m_Window->Initialize();
 
 		s_SkinBuilder = this;
+
+		m_Camera = Camera(45.0f, width / static_cast<float>(height), 0.01f, 100.0f);
 	}
 
 	Window* SkinBuilder::GetWindow() const
@@ -45,13 +47,18 @@ namespace SkinBuilder
 		{
 			m_Window->PollEvents();
 
+
+			bool shouldRotateViewport = m_Window->IsMouseButtonPressed(MouseCode::Button0);
+			bool shouldPanViewport = m_Window->IsMouseButtonPressed(MouseCode::Button1);
+			m_Camera.OnUpdate(m_Window->GetMousePos(), shouldRotateViewport, shouldPanViewport);
+
 			ImGuiHelper::Begin();
 
 			ImGui::ShowDemoWindow();
 
 			ImGui::Render();
 
-			renderer.Begin();
+			renderer.Begin(m_Camera);
 			renderer.Draw(0, 0);
 			ImGuiHelper::End(renderer.GetCommandBuffer());
 			renderer.End();
