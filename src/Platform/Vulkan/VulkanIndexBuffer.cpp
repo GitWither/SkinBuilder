@@ -64,6 +64,9 @@ namespace SkinBuilder
 
 		vkFreeCommandBuffers(device->GetLogicalDevice(), commandPool, 1, &commandBuffer);
 		vkDestroyCommandPool(device->GetLogicalDevice(), commandPool, nullptr);
+
+		//delete staging buffer
+		VulkanAllocator::DestroyBuffer(buffer, bufferAllocation);
 	}
 
 	VulkanIndexBuffer::~VulkanIndexBuffer()

@@ -31,6 +31,8 @@ namespace SkinBuilder
 		VulkanUniformBufferSet m_UniformBufferSet;
 
 		Shared<VulkanPipeline> m_GeoPipeline;
+
+		VkDescriptorPool m_DescriptorPool;
 	public:
 		VulkanRenderer(const Shared<VulkanContext>& context);
 		~VulkanRenderer();

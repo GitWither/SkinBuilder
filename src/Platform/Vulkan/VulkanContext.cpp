@@ -1,6 +1,7 @@
 #include "Platform/Vulkan/VulkanContext.hpp"
 #include "Platform/Vulkan/VulkanAllocator.hpp"
 #include "Core/Window.hpp"
+#include "ImGui/ImGui.hpp"
 
 #include <GLFW/glfw3.h>
 
@@ -81,7 +82,11 @@ namespace SkinBuilder
 
 	VulkanContext::~VulkanContext()
 	{
+		ImGuiHelper::Shutdown();
+
 		VulkanAllocator::Shutdown();
+
+		vkDeviceWaitIdle(m_Device->GetLogicalDevice());
 
 		m_Swapchain = nullptr;
 		m_Device = nullptr;

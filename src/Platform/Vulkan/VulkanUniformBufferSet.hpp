@@ -13,7 +13,9 @@ namespace SkinBuilder
 		std::unordered_map<uint32_t, std::unordered_map<uint32_t, Shared<VulkanUniformBuffer>>> m_UniformBuffers;
 	public:
 		VulkanUniformBufferSet(uint32_t framesInFlight) : m_MaxFramesInFlight(framesInFlight) {}
-		~VulkanUniformBufferSet() {}
+		~VulkanUniformBufferSet() {
+			m_UniformBuffers.clear();
+		}
 
 		void Create(uint32_t size, uint32_t binding)
 		{

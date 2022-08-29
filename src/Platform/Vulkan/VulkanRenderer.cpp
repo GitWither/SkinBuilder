@@ -53,15 +53,13 @@ namespace SkinBuilder
 		poolInfo.pPoolSizes = &poolSize;
 		poolInfo.maxSets = maxFramesInFlight;
 
-		VkDescriptorPool descriptorPool;
-
-		VK_ASSERT(vkCreateDescriptorPool(m_Context->GetDevice()->GetLogicalDevice(), &poolInfo, nullptr, &descriptorPool));
+		VK_ASSERT(vkCreateDescriptorPool(m_Context->GetDevice()->GetLogicalDevice(), &poolInfo, nullptr, &m_DescriptorPool));
 
 		m_DescriptorSetLayouts.resize(maxFramesInFlight, m_GeoPipeline->GetDescriptorSetLayout());
 
 		VkDescriptorSetAllocateInfo descriptorSetAllocateInfo{};
 		descriptorSetAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-		descriptorSetAllocateInfo.descriptorPool = descriptorPool;
+		descriptorSetAllocateInfo.descriptorPool = m_DescriptorPool;
 		descriptorSetAllocateInfo.descriptorSetCount = maxFramesInFlight;
 		descriptorSetAllocateInfo.pSetLayouts = m_DescriptorSetLayouts.data();
 
@@ -117,6 +115,9 @@ namespace SkinBuilder
 	VulkanRenderer::~VulkanRenderer()
 	{
 		vkDeviceWaitIdle(m_Context->GetDevice()->GetLogicalDevice());
+
+		vkDestroyDescriptorPool(m_Context->GetDevice()->GetLogicalDevice(), m_DescriptorPool, nullptr);
+
 
 		for (uint32_t i = 0; i < m_Context->GetSwapchain()->GetMaxFramesInFlight(); i++)
 		{

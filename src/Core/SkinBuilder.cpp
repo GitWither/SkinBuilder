@@ -67,7 +67,5 @@ namespace SkinBuilder
 
 			m_Running = !m_Window->ShouldClose();
 		}
-
-		ImGuiHelper::Shutdown();
 	}
 }
