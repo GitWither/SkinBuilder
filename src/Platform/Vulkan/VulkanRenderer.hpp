@@ -29,6 +29,8 @@ namespace SkinBuilder
 
 		Shared<VulkanContext> m_Context;
 		VulkanUniformBufferSet m_UniformBufferSet;
+
+		Shared<VulkanPipeline> m_GeoPipeline;
 	public:
 		VulkanRenderer(const Shared<VulkanContext>& context);
 		~VulkanRenderer();

@@ -9,7 +9,7 @@ namespace SkinBuilder
 		VK_DYNAMIC_STATE_SCISSOR
 	};
 
-	constexpr static VkFormat DataTypeToVkFormat(DataType type)
+	constexpr static VkFormat DataTypeToVkFormat(const DataType type)
 	{
 		switch (type)
 		{
@@ -17,9 +17,8 @@ namespace SkinBuilder
 			case DataType::Vector2: return VK_FORMAT_R32G32_SFLOAT;
 			case DataType::Vector3: return VK_FORMAT_R32G32B32_SFLOAT;
 			case DataType::Vector4: return VK_FORMAT_R32G32B32A32_SFLOAT;
+			default: return VK_FORMAT_UNDEFINED;
 		}
-
-		return VK_FORMAT_UNDEFINED;
 	}
 
 
@@ -69,7 +68,7 @@ namespace SkinBuilder
 		rasterState.polygonMode = VK_POLYGON_MODE_FILL;
 		rasterState.lineWidth = 1.0f;
 		rasterState.cullMode = VK_CULL_MODE_BACK_BIT;
-		rasterState.frontFace = VK_FRONT_FACE_CLOCKWISE;
+		rasterState.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
 		rasterState.depthBiasEnable = VK_FALSE;
 		rasterState.depthBiasConstantFactor = 0.0f;
 		rasterState.depthBiasClamp = 0.0f;
@@ -112,11 +111,12 @@ namespace SkinBuilder
 		uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 		uboLayoutBinding.pImmutableSamplers = nullptr;
 
+		std::vector<VkDescriptorSetLayoutBinding> uniformBufferDescriptorSets(m_Info.UniformBuffers, uboLayoutBinding);
 
 		VkDescriptorSetLayoutCreateInfo descriptorSetLayoutInfo{};
 		descriptorSetLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-		descriptorSetLayoutInfo.bindingCount = 1;
-		descriptorSetLayoutInfo.pBindings = &uboLayoutBinding;
+		descriptorSetLayoutInfo.bindingCount = uniformBufferDescriptorSets.size();
+		descriptorSetLayoutInfo.pBindings = uniformBufferDescriptorSets.data();
 
 		VK_ASSERT(vkCreateDescriptorSetLayout(m_Device->GetLogicalDevice(), &descriptorSetLayoutInfo, nullptr, &m_DescriptorSetLayout));
 
@@ -154,7 +154,7 @@ namespace SkinBuilder
 
 	VulkanPipeline::~VulkanPipeline()
 	{
-
+		vkDestroyDescriptorSetLayout(m_Device->GetLogicalDevice(), m_DescriptorSetLayout, nullptr);
 		vkDestroyPipeline(m_Device->GetLogicalDevice(), m_Pipeline, nullptr);
 		vkDestroyPipelineLayout(m_Device->GetLogicalDevice(), m_PipelineLayout, nullptr);
 

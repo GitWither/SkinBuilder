@@ -51,7 +51,7 @@ namespace SkinBuilder
 
 		{
 			// Use any command queue
-			VkCommandPool command_pool = renderer.GetCommandPool();
+			//VkCommandPool command_pool = renderer.GetCommandPool();
 			VkCommandBuffer command_buffer = renderer.GetCommandBuffer();
 
 			VkCommandBufferBeginInfo begin_info = {};

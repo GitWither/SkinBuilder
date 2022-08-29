@@ -193,7 +193,7 @@ namespace SkinBuilder
 
 		vkCreateRenderPass(m_Device->GetLogicalDevice(), &renderPassInfo, nullptr, &m_RenderPass);
 
-		for (int i = 0; i < imageCount; i++)
+		for (uint32_t i = 0; i < imageCount; i++)
 		{
 			VkFramebufferCreateInfo framebufferCreateInfo{};
 			framebufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;

@@ -13,6 +13,7 @@ namespace SkinBuilder
 {
 	struct VulkanPipelineInfo
 	{
+		uint32_t UniformBuffers;
 		VkRenderPass RenderPass;
 		VertexBufferLayout Layout;
 		Shared<VulkanShader> Shader;

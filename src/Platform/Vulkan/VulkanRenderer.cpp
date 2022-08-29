@@ -7,10 +7,10 @@
 namespace SkinBuilder
 {
 	static Vertex s_TriangleVertices[] = {
-	{ {  0.5f, -0.5f, 0.0f }, { 1.0f, 0.0f, 0.0f, 1.0f } }, // Top-Right
-	{ {  0.5f,  0.5f, 0.0f }, { 1.0f, 0.0f, 0.0f, 1.0f } }, // Bottom-Right
-	{ { -0.5f,  0.5f, 0.0f }, { 1.0f, 0.0f, 0.0f, 1.0f } }, // Bottom-Left
-	{ { -0.5f, -0.5f, 0.0f }, { 0.0f, 0.0f, 1.0f, 1.0f } }, // Top-Left
+		{{-0.5f, -0.5f, 0.0f }, {1.0f, 0.0f, 0.0f, 1.0f}},
+		{{0.5f, -0.5f, 0.0f},   {0.0f, 1.0f, 0.0f, 1.0f}},
+		{{0.5f, 0.5f, 0.0f},    {0.0f, 0.0f, 1.0f, 1.0f}},
+		{{-0.5f, 0.5f, 0.0f},   {1.0f, 1.0f, 1.0f, 1.0f}}
 	};
 
 	static uint32_t s_TriangleIndices[] = { 0, 1, 2, 2, 3, 0 };
@@ -38,6 +38,18 @@ namespace SkinBuilder
 
 		m_UniformBufferSet.Create(sizeof(CameraData) * 3, 0);
 
+		VulkanPipelineInfo pipelineInfo;
+		pipelineInfo.RenderPass = m_Context->GetSwapchain()->GetRenderPass();
+		pipelineInfo.Shader = MakeShared<VulkanShader>("main", m_Context->GetDevice());
+		pipelineInfo.UniformBuffers = 1;
+		pipelineInfo.Layout = {
+			{0, DataType::Vector3, offsetof(Vertex, Position)},
+			{ 1, DataType::Vector4, offsetof(Vertex, Color)}
+		};
+
+		m_GeoPipeline = MakeShared<VulkanPipeline>(pipelineInfo, m_Context->GetDevice());
+
+
 		VkDescriptorPoolSize poolSize{};
 		poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		poolSize.descriptorCount = maxFramesInFlight;
@@ -52,7 +64,7 @@ namespace SkinBuilder
 
 		VK_ASSERT(vkCreateDescriptorPool(m_Context->GetDevice()->GetLogicalDevice(), &poolInfo, nullptr, &descriptorPool));
 
-		m_DescriptorSetLayouts.resize(maxFramesInFlight, m_Context->GetPipeline()->GetDescriptorSetLayout());
+		m_DescriptorSetLayouts.resize(maxFramesInFlight, m_GeoPipeline->GetDescriptorSetLayout());
 
 		VkDescriptorSetAllocateInfo descriptorSetAllocateInfo{};
 		descriptorSetAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
@@ -139,8 +151,10 @@ namespace SkinBuilder
 		} cameraData{};
 
 		cameraData.model = glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-		cameraData.projection = glm::perspective(glm::radians(45.0f), 16 / 9.0f, 0.1f, 10.0f);
+		cameraData.projection = glm::perspective(glm::radians(45.0f), swapchain->GetExtent().width / static_cast<float>(swapchain->GetExtent().height), 0.1f, 10.0f);
 		cameraData.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+
+		cameraData.projection[1][1] *= -1;
 
 		Shared<VulkanUniformBuffer> uniformBuffer = m_UniformBufferSet.Get(0, currentFrame);
 		uniformBuffer->SetData(&cameraData, sizeof(cameraData));
@@ -168,7 +182,7 @@ namespace SkinBuilder
 
 		vkCmdBeginRenderPass(m_CommandBuffers[currentFrame], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 		//wtf
-		vkCmdBindPipeline(m_CommandBuffers[currentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, m_Context->GetPipeline()->GetPipeline());
+		vkCmdBindPipeline(m_CommandBuffers[currentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, m_GeoPipeline->GetPipeline());
 
 		m_IndexBuffer.Bind(m_CommandBuffers[currentFrame]);
 		m_VertexBuffer.Bind(m_CommandBuffers[currentFrame]);
@@ -186,8 +200,8 @@ namespace SkinBuilder
 
 	void VulkanRenderer::Draw(float width, float height)
 	{
-		VkExtent2D swapchainExtent = m_Context->GetSwapchain()->GetExtent();
-
+		const VkExtent2D swapchainExtent = m_Context->GetSwapchain()->GetExtent();
+		
 		VkViewport viewport{};
 		viewport.x = 0.0f;
 		viewport.y = 0.0f;
@@ -200,12 +214,13 @@ namespace SkinBuilder
 		scissor.offset = { 0, 0 };
 		scissor.extent = swapchainExtent;
 
-		const VkCommandBuffer currentCommandBuffer = m_CommandBuffers[m_Context->GetSwapchain()->GetCurrentFrameIndex()];
+		const uint32_t currentFrame = m_Context->GetSwapchain()->GetCurrentFrameIndex();
+		const VkCommandBuffer& currentCommandBuffer = m_CommandBuffers[currentFrame];
 
 		vkCmdSetViewport(currentCommandBuffer, 0, 1, &viewport);
 		vkCmdSetScissor(currentCommandBuffer, 0, 1, &scissor);
 		//vkCmdDraw(currentCommandBuffer, 3, 1, 0, 0);
-		vkCmdBindDescriptorSets(currentCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Context->GetPipeline()->GetPipelineLayout(), 0, 1, &m_DescriptorSets[m_Context->GetSwapchain()->GetCurrentFrameIndex()], 0, nullptr);
+		vkCmdBindDescriptorSets(currentCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_GeoPipeline->GetPipelineLayout(), 0, 1, &m_DescriptorSets[currentFrame], 0, nullptr);
 		vkCmdDrawIndexed(currentCommandBuffer, m_IndexBuffer.GetCount(), 1, 0, 0, 0);
 	}
 
@@ -216,15 +231,16 @@ namespace SkinBuilder
 		VkSubmitInfo submitInfo{};
 		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-		VkSemaphore waitSemaphores[] = { m_Context->GetSwapchain()->GetImageAvailableSemaphore() };
-		VkPipelineStageFlags pipelineStageFlags[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+		constexpr VkPipelineStageFlags pipelineStageFlags[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+		const VkSemaphore waitSemaphores[] = { m_Context->GetSwapchain()->GetImageAvailableSemaphore() };
+
 		submitInfo.waitSemaphoreCount = 1;
 		submitInfo.pWaitSemaphores = waitSemaphores;
 		submitInfo.pWaitDstStageMask = pipelineStageFlags;
 		submitInfo.commandBufferCount = 1;
 		submitInfo.pCommandBuffers = &m_CommandBuffers[swapchain.GetCurrentFrameIndex()];
 
-		VkSemaphore signalSemaphores[] = { m_Context->GetSwapchain()->GetRenderFinishedSemaphore() };
+		const VkSemaphore signalSemaphores[] = { m_Context->GetSwapchain()->GetRenderFinishedSemaphore() };
 		submitInfo.signalSemaphoreCount = 1;
 		submitInfo.pSignalSemaphores = signalSemaphores;
 
