@@ -11,6 +11,7 @@
 #include "VulkanCommandBuffer.hpp"
 #include "VulkanContext.hpp"
 #include "VulkanIndexBuffer.hpp"
+#include "VulkanTexture.hpp"
 #include "VulkanVertexBuffer.hpp"
 
 namespace SkinBuilder
@@ -31,6 +32,7 @@ namespace SkinBuilder
 		VulkanUniformBufferSet m_UniformBufferSet;
 
 		Shared<VulkanPipeline> m_GeoPipeline;
+		Shared<VulkanTexture> m_Texture;
 
 		VkDescriptorPool m_DescriptorPool;
 	public:

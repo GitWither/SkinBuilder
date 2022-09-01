@@ -111,11 +111,19 @@ namespace SkinBuilder
 		uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 		uboLayoutBinding.pImmutableSamplers = nullptr;
 
+		VkDescriptorSetLayoutBinding samplerLayoutBinding{};
+		samplerLayoutBinding.binding = 1;
+		samplerLayoutBinding.descriptorCount = 1;
+		samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		samplerLayoutBinding.pImmutableSamplers = nullptr;
+		samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
 		std::vector<VkDescriptorSetLayoutBinding> uniformBufferDescriptorSets(m_Info.UniformBuffers, uboLayoutBinding);
+		uniformBufferDescriptorSets.push_back(samplerLayoutBinding);
 
 		VkDescriptorSetLayoutCreateInfo descriptorSetLayoutInfo{};
 		descriptorSetLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-		descriptorSetLayoutInfo.bindingCount = uniformBufferDescriptorSets.size();
+		descriptorSetLayoutInfo.bindingCount = static_cast<uint32_t>(uniformBufferDescriptorSets.size());
 		descriptorSetLayoutInfo.pBindings = uniformBufferDescriptorSets.data();
 
 		VK_ASSERT(vkCreateDescriptorSetLayout(m_Device->GetLogicalDevice(), &descriptorSetLayoutInfo, nullptr, &m_DescriptorSetLayout));

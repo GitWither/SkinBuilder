@@ -56,6 +56,7 @@ add_executable("${PROJECT_NAME}" "${SOURCES}" "${IMGUI_SOURCES}")
 compile_shaders(${PROJECT_NAME} SHADERS ${SHADERS})
 
 target_include_directories("${PROJECT_NAME}" PUBLIC "deps/imgui")
+target_include_directories("${PROJECT_NAME}" PUBLIC "deps/stbi")
 
 target_compile_definitions("${PROJECT_NAME}" PRIVATE
   $<$<CONFIG:Debug>:SKINBUILDER_DEBUG>

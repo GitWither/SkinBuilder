@@ -7,10 +7,10 @@
 namespace SkinBuilder
 {
 	static Vertex s_TriangleVertices[] = {
-		{{-0.5f, -0.5f, 0.0f }, {1.0f, 0.0f, 0.0f, 1.0f}},
-		{{0.5f, -0.5f, 0.0f},   {0.0f, 1.0f, 0.0f, 1.0f}},
-		{{0.5f, 0.5f, 0.0f},    {0.0f, 0.0f, 1.0f, 1.0f}},
-		{{-0.5f, 0.5f, 0.0f},   {1.0f, 1.0f, 1.0f, 1.0f}}
+		{{-0.5f, -0.5f, 0.0f }, {1.0f, 0.0f, 0.0f, 1.0f}, {1.0f, 0.0f}},
+		{{0.5f, -0.5f, 0.0f},   {0.0f, 1.0f, 0.0f, 1.0f}, {0.0f, 0.0f}},
+		{{0.5f, 0.5f, 0.0f},    {0.0f, 0.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
+		{{-0.5f, 0.5f, 0.0f},   {1.0f, 1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}}
 	};
 
 	static uint32_t s_TriangleIndices[] = { 0, 1, 2, 2, 3, 0 };
@@ -23,6 +23,8 @@ namespace SkinBuilder
 	m_UniformBufferSet(m_Context->GetSwapchain()->GetMaxFramesInFlight())
 	{
 		const VulkanSwapchain& swapchain = *context->GetSwapchain();
+
+		m_Texture = MakeShared<VulkanTexture>("texture.jpg", context->GetDevice());
 
 		const uint32_t maxFramesInFlight = swapchain.GetMaxFramesInFlight();
 
@@ -37,20 +39,24 @@ namespace SkinBuilder
 		pipelineInfo.UniformBuffers = 1;
 		pipelineInfo.Layout = {
 			{0, DataType::Vector3, offsetof(Vertex, Position)},
-			{ 1, DataType::Vector4, offsetof(Vertex, Color)}
+			{ 1, DataType::Vector4, offsetof(Vertex, Color)},
+			{2, DataType::Vector2, offsetof(Vertex, TexCoords)}
 		};
 
 		m_GeoPipeline = MakeShared<VulkanPipeline>(pipelineInfo, m_Context->GetDevice());
 
 
-		VkDescriptorPoolSize poolSize{};
-		poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		poolSize.descriptorCount = maxFramesInFlight;
+		std::array<VkDescriptorPoolSize, 2> poolSizes = {
+			{
+				{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, maxFramesInFlight},
+				{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, maxFramesInFlight}
+			}
+		};
 
 		VkDescriptorPoolCreateInfo poolInfo{};
 		poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-		poolInfo.poolSizeCount = 1;
-		poolInfo.pPoolSizes = &poolSize;
+		poolInfo.poolSizeCount = poolSizes.size();
+		poolInfo.pPoolSizes = poolSizes.data();
 		poolInfo.maxSets = maxFramesInFlight;
 
 		VK_ASSERT(vkCreateDescriptorPool(m_Context->GetDevice()->GetLogicalDevice(), &poolInfo, nullptr, &m_DescriptorPool));
@@ -74,18 +80,32 @@ namespace SkinBuilder
 			bufferInfo.offset = 0;
 			bufferInfo.range = sizeof(glm::mat4);
 
-			VkWriteDescriptorSet descriptorWrite{};
-			descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorWrite.dstSet = m_DescriptorSets[i];
-			descriptorWrite.dstBinding = 0;
-			descriptorWrite.dstArrayElement = 0;
-			descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-			descriptorWrite.descriptorCount = 1;
-			descriptorWrite.pBufferInfo = &bufferInfo;
-			descriptorWrite.pImageInfo = nullptr;
-			descriptorWrite.pTexelBufferView = nullptr;
+			VkDescriptorImageInfo imageInfo{};
+			imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+			imageInfo.imageView = m_Texture->GetImageView();
+			imageInfo.sampler = m_Texture->GetSampler();
 
-			vkUpdateDescriptorSets(m_Context->GetDevice()->GetLogicalDevice(), 1, &descriptorWrite, 0, nullptr);
+			std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
+
+			descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			descriptorWrites[0].dstSet = m_DescriptorSets[i];
+			descriptorWrites[0].dstBinding = 0;
+			descriptorWrites[0].dstArrayElement = 0;
+			descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			descriptorWrites[0].descriptorCount = 1;
+			descriptorWrites[0].pBufferInfo = &bufferInfo;
+			descriptorWrites[0].pImageInfo = nullptr;
+			descriptorWrites[0].pTexelBufferView = nullptr;
+
+			descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			descriptorWrites[1].dstSet = m_DescriptorSets[i];
+			descriptorWrites[1].dstBinding = 1;
+			descriptorWrites[1].dstArrayElement = 0;
+			descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			descriptorWrites[1].descriptorCount = 1;
+			descriptorWrites[1].pImageInfo = &imageInfo;
+
+			vkUpdateDescriptorSets(m_Context->GetDevice()->GetLogicalDevice(), descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
 		}
 
 

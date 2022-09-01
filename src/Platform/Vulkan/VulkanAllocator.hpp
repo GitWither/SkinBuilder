@@ -8,6 +8,7 @@ namespace SkinBuilder
 	namespace VulkanAllocator
 	{
 		VmaAllocation AllocateBuffer(VkBufferCreateInfo* bufferInfo, VmaMemoryUsage memoryUsage, VkMemoryPropertyFlags memoryFlags, VkBuffer* resultBuffer);
+		VmaAllocation AllocateImage(VkImageCreateInfo createInfo, VmaMemoryUsage memoryUsage, VkImage& image);
 		void DestroyBuffer(VkBuffer buffer, VmaAllocation allocation);
 		void FreeAllocation(VmaAllocation allocation);
 		void MapMemory(VmaAllocation allocation, void** resultMemory);

@@ -19,6 +19,19 @@ namespace SkinBuilder::VulkanAllocator
 		return allocation;
 	}
 
+	VmaAllocation AllocateImage(VkImageCreateInfo createInfo, VmaMemoryUsage memoryUsage, VkImage& image)
+	{
+		VmaAllocationCreateInfo allocationCreateInfo = {};
+		allocationCreateInfo.usage = memoryUsage;
+
+		VmaAllocation allocation;
+
+		VK_ASSERT(vmaCreateImage(s_Allocator, &createInfo, &allocationCreateInfo, &image, &allocation, nullptr));
+
+		return allocation;
+	}
+
+
 	void DestroyBuffer(VkBuffer buffer, VmaAllocation allocation)
 	{
 		vmaDestroyBuffer(s_Allocator, buffer, allocation);
