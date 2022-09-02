@@ -7,18 +7,27 @@
 namespace SkinBuilder
 {
 	static Vertex s_TriangleVertices[] = {
-		{{-0.5f, -0.5f, 0.0f }, {1.0f, 0.0f, 0.0f, 1.0f}, {1.0f, 0.0f}},
-		{{0.5f, -0.5f, 0.0f},   {0.0f, 1.0f, 0.0f, 1.0f}, {0.0f, 0.0f}},
-		{{0.5f, 0.5f, 0.0f},    {0.0f, 0.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
-		{{-0.5f, 0.5f, 0.0f},   {1.0f, 1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}}
+		{{0.25f, 1.5f, -0.25f }, {1.0f, 0.0f}},
+		{{-0.25f, 1.5f, -0.25f},   {0.0f, 0.0f}},
+		{{-0.25f, 2.0f, -0.25f},    {0.0f, 1.0f}},
+		{{0.25f, 2.0f, -0.25f},   {1.0f, 1.0f}},
+		{{0.25f, 1.5f, 0.25f}, {}},
+		{{0.25f, 2.0f, 0.25f}, {}},
+		{{-0.25f, 1.5f, 0.25f}, {}},
+		{{-0.25f, 2.0f, 0.25f}, {}}
 	};
 
-	static uint32_t s_TriangleIndices[] = { 0, 1, 2, 2, 3, 0 };
+	static uint32_t s_TriangleIndices[] = {
+		1, 3, 0, 0, 5, 4, 4, 7, 6,
+		6, 2, 1, 5, 2, 7, 0, 6, 1,
+		1, 2, 3, 0, 3, 5, 4, 5, 7,
+		6, 7, 2, 5, 3, 2, 0, 4, 6
+	};
 
 	VulkanRenderer::VulkanRenderer(const Shared<VulkanContext>& context)
 	:
-	m_IndexBuffer(6, s_TriangleIndices, context->GetDevice()),
-	m_VertexBuffer(4 * sizeof(Vertex), s_TriangleVertices, context->GetDevice()),
+	m_IndexBuffer(36, s_TriangleIndices, context->GetDevice()),
+	m_VertexBuffer(8 * sizeof(Vertex), s_TriangleVertices, context->GetDevice()),
 	m_Context(context),
 	m_UniformBufferSet(m_Context->GetSwapchain()->GetMaxFramesInFlight())
 	{
@@ -39,14 +48,13 @@ namespace SkinBuilder
 		pipelineInfo.UniformBuffers = 1;
 		pipelineInfo.Layout = {
 			{0, DataType::Vector3, offsetof(Vertex, Position)},
-			{ 1, DataType::Vector4, offsetof(Vertex, Color)},
-			{2, DataType::Vector2, offsetof(Vertex, TexCoords)}
+			{1, DataType::Vector2, offsetof(Vertex, TexCoords)}
 		};
 
 		m_GeoPipeline = MakeShared<VulkanPipeline>(pipelineInfo, m_Context->GetDevice());
 
 
-		std::array<VkDescriptorPoolSize, 2> poolSizes = {
+		const std::array<VkDescriptorPoolSize, 2> poolSizes = {
 			{
 				{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, maxFramesInFlight},
 				{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, maxFramesInFlight}
