@@ -74,7 +74,7 @@ namespace SkinBuilder
 		VulkanAllocator::DestroyBuffer(m_Buffer, m_BufferAllocation);
 	}
 
-	void VulkanIndexBuffer::Bind(VkCommandBuffer buffer)
+	void VulkanIndexBuffer::Bind(VkCommandBuffer buffer) const
 	{
 		vkCmdBindIndexBuffer(buffer, m_Buffer, 0, VK_INDEX_TYPE_UINT32);
 	}

@@ -17,6 +17,6 @@ namespace SkinBuilder
 		VulkanVertexBuffer(uint32_t count, void* data, const Shared<VulkanDevice> device);
 		~VulkanVertexBuffer();
 
-		void Bind(VkCommandBuffer commandBuffer);
+		void Bind(VkCommandBuffer commandBuffer) const;
 	};
 }

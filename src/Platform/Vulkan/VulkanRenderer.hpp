@@ -13,6 +13,7 @@
 #include "VulkanIndexBuffer.hpp"
 #include "VulkanTexture.hpp"
 #include "VulkanVertexBuffer.hpp"
+#include "Graphics/Mesh.hpp"
 
 namespace SkinBuilder
 {
@@ -24,9 +25,6 @@ namespace SkinBuilder
 
 		std::vector<VkDescriptorSetLayout> m_DescriptorSetLayouts;
 		std::vector<VkDescriptorSet> m_DescriptorSets;
-
-		VulkanIndexBuffer m_IndexBuffer;
-		VulkanVertexBuffer m_VertexBuffer;
 
 		Shared<VulkanContext> m_Context;
 		VulkanUniformBufferSet m_UniformBufferSet;
@@ -46,6 +44,7 @@ namespace SkinBuilder
 		void End();
 
 		void Draw(float width, float height);
+		void DrawMesh(const Shared<Mesh>& mesh);
 		void Submit();
 	};
 }

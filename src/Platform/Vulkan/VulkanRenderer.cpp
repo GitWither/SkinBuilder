@@ -6,34 +6,14 @@
 
 namespace SkinBuilder
 {
-	static Vertex s_TriangleVertices[] = {
-		{{0.25f, 1.5f, -0.25f }, {1.0f, 0.0f}},
-		{{-0.25f, 1.5f, -0.25f},   {0.0f, 0.0f}},
-		{{-0.25f, 2.0f, -0.25f},    {0.0f, 1.0f}},
-		{{0.25f, 2.0f, -0.25f},   {1.0f, 1.0f}},
-		{{0.25f, 1.5f, 0.25f}, {}},
-		{{0.25f, 2.0f, 0.25f}, {}},
-		{{-0.25f, 1.5f, 0.25f}, {}},
-		{{-0.25f, 2.0f, 0.25f}, {}}
-	};
-
-	static uint32_t s_TriangleIndices[] = {
-		1, 3, 0, 0, 5, 4, 4, 7, 6,
-		6, 2, 1, 5, 2, 7, 0, 6, 1,
-		1, 2, 3, 0, 3, 5, 4, 5, 7,
-		6, 7, 2, 5, 3, 2, 0, 4, 6
-	};
-
 	VulkanRenderer::VulkanRenderer(const Shared<VulkanContext>& context)
 	:
-	m_IndexBuffer(36, s_TriangleIndices, context->GetDevice()),
-	m_VertexBuffer(8 * sizeof(Vertex), s_TriangleVertices, context->GetDevice()),
 	m_Context(context),
 	m_UniformBufferSet(m_Context->GetSwapchain()->GetMaxFramesInFlight())
 	{
 		const VulkanSwapchain& swapchain = *context->GetSwapchain();
 
-		m_Texture = MakeShared<VulkanTexture>("texture.jpg", context->GetDevice());
+		m_Texture = MakeShared<VulkanTexture>("steve.png", context->GetDevice());
 
 		const uint32_t maxFramesInFlight = swapchain.GetMaxFramesInFlight();
 
@@ -192,11 +172,7 @@ namespace SkinBuilder
 		renderPassInfo.pClearValues = &clearVal;
 
 		vkCmdBeginRenderPass(m_CommandBuffers[currentFrame], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-		//wtf
 		vkCmdBindPipeline(m_CommandBuffers[currentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, m_GeoPipeline->GetPipeline());
-
-		m_IndexBuffer.Bind(m_CommandBuffers[currentFrame]);
-		m_VertexBuffer.Bind(m_CommandBuffers[currentFrame]);
 	}
 
 	void VulkanRenderer::End()
@@ -232,7 +208,18 @@ namespace SkinBuilder
 		vkCmdSetScissor(currentCommandBuffer, 0, 1, &scissor);
 		//vkCmdDraw(currentCommandBuffer, 3, 1, 0, 0);
 		vkCmdBindDescriptorSets(currentCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_GeoPipeline->GetPipelineLayout(), 0, 1, &m_DescriptorSets[currentFrame], 0, nullptr);
-		vkCmdDrawIndexed(currentCommandBuffer, m_IndexBuffer.GetCount(), 1, 0, 0, 0);
+		//vkCmdDrawIndexed(currentCommandBuffer, m_IndexBuffer.GetCount(), 1, 0, 0, 0);
+	}
+
+	void VulkanRenderer::DrawMesh(const Shared<Mesh>& mesh)
+	{
+		const uint32_t currentFrame = m_Context->GetSwapchain()->GetCurrentFrameIndex();
+		const VkCommandBuffer& currentCommandBuffer = m_CommandBuffers[currentFrame];
+
+		mesh->GetIndexBuffer()->Bind(currentCommandBuffer);
+		mesh->GetVertexBuffer()->Bind(currentCommandBuffer);
+
+		vkCmdDrawIndexed(currentCommandBuffer, mesh->GetIndexBuffer()->GetCount(), 1, 0, 0, 0);
 	}
 
 	void VulkanRenderer::Submit()

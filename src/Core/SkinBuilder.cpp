@@ -43,6 +43,8 @@ namespace SkinBuilder
 
 		ImGuiHelper::Initialize(context, renderer, m_Window.get());
 
+		Shared<Mesh> mesh = Mesh::LoadWavefront("player.obj", context->GetDevice());
+
 		while (m_Running)
 		{
 			m_Window->PollEvents();
@@ -59,8 +61,13 @@ namespace SkinBuilder
 			ImGui::Render();
 
 			renderer.Begin(m_Camera);
+
 			renderer.Draw(0, 0);
+
+			renderer.DrawMesh(mesh);
+
 			ImGuiHelper::End(renderer.GetCommandBuffer());
+
 			renderer.End();
 
 			renderer.Submit();

@@ -17,7 +17,7 @@ namespace SkinBuilder
 		VulkanIndexBuffer(uint32_t count, uint32_t* data, const Shared<VulkanDevice>& device);
 		~VulkanIndexBuffer();
 
-		void Bind(VkCommandBuffer buffer);
+		void Bind(VkCommandBuffer buffer) const;
 
 		uint32_t GetCount() const { return m_IndexCount; }
 	};

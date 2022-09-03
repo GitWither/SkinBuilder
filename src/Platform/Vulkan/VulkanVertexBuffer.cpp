@@ -1,5 +1,7 @@
 #include "Platform/Vulkan/VulkanVertexBuffer.hpp"
 
+#include "Graphics/Vertex.hpp"
+
 namespace SkinBuilder
 {
 	VulkanVertexBuffer::VulkanVertexBuffer(uint32_t count, void* data, const Shared<VulkanDevice> device)
@@ -12,7 +14,6 @@ namespace SkinBuilder
 
 		VkBuffer buffer;
 		VmaAllocation bufferAllocation = VulkanAllocator::AllocateBuffer(&bufferCreateInfo, VMA_MEMORY_USAGE_CPU_TO_GPU, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &buffer);
-
 
 		void* mappedMemory;
 		VulkanAllocator::MapMemory(bufferAllocation, &mappedMemory);
@@ -76,7 +77,7 @@ namespace SkinBuilder
 	}
 
 
-	void VulkanVertexBuffer::Bind(VkCommandBuffer commandBuffer)
+	void VulkanVertexBuffer::Bind(VkCommandBuffer commandBuffer) const
 	{
 		VkDeviceSize offsets[] = { 0 };
 		vkCmdBindVertexBuffers(commandBuffer, 0, 1, &m_Buffer, offsets);
