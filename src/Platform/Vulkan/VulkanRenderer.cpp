@@ -167,9 +167,11 @@ namespace SkinBuilder
 		renderPassInfo.renderArea.offset = { 0, 0 };
 		renderPassInfo.renderArea.extent = swapchain->GetExtent();
 
-		VkClearValue clearVal = { {{1.0f, 1.0f, 1.0f, 1.0f }} };
-		renderPassInfo.clearValueCount = 1;
-		renderPassInfo.pClearValues = &clearVal;
+		std::array<VkClearValue, 2> clearValues{};
+		clearValues[0].color = { 1.0f, 1.0f, 1.0f, 1.0f };
+		clearValues[1].depthStencil = { 1.0f, 0 };
+		renderPassInfo.clearValueCount = clearValues.size();
+		renderPassInfo.pClearValues = clearValues.data();
 
 		vkCmdBeginRenderPass(m_CommandBuffers[currentFrame], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 		vkCmdBindPipeline(m_CommandBuffers[currentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, m_GeoPipeline->GetPipeline());

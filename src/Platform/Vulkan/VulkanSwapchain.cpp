@@ -131,6 +131,42 @@ namespace SkinBuilder
 
 		vkGetSwapchainImagesKHR(m_Device->GetLogicalDevice(), m_Swapchain, &imageCount, m_Images.data());
 
+		VkImageCreateInfo depthImageCreateInfo{};
+		depthImageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+		depthImageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
+		depthImageCreateInfo.extent = {
+			m_SwapExtent.width,
+			m_SwapExtent.height,
+			1
+		};
+		depthImageCreateInfo.mipLevels = 1;
+		depthImageCreateInfo.arrayLayers = 1;
+		depthImageCreateInfo.format = VK_FORMAT_D32_SFLOAT;
+		depthImageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+		depthImageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		depthImageCreateInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+		depthImageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+		depthImageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+		m_DepthImageAllocation = VulkanAllocator::AllocateImage(depthImageCreateInfo, VMA_MEMORY_USAGE_GPU_ONLY, m_DepthImage);
+
+
+		VkImageViewCreateInfo depthImageViewCreateInfo{};
+		depthImageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+		depthImageViewCreateInfo.image = m_DepthImage;
+		depthImageViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+		depthImageViewCreateInfo.format = VK_FORMAT_D32_SFLOAT;
+		depthImageViewCreateInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+		depthImageViewCreateInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+		depthImageViewCreateInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+		depthImageViewCreateInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+		depthImageViewCreateInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+		depthImageViewCreateInfo.subresourceRange.baseMipLevel = 0;
+		depthImageViewCreateInfo.subresourceRange.levelCount = 1;
+		depthImageViewCreateInfo.subresourceRange.baseArrayLayer = 0;
+		depthImageViewCreateInfo.subresourceRange.layerCount = 1;
+
+		VK_ASSERT(vkCreateImageView(m_Device->GetLogicalDevice(), &depthImageViewCreateInfo, nullptr, &m_DepthImageView));
 
 		for (size_t i = 0; i < imageCount; i++)
 		{
@@ -149,11 +185,22 @@ namespace SkinBuilder
 			viewCreateInfo.subresourceRange.baseArrayLayer = 0;
 			viewCreateInfo.subresourceRange.layerCount = 1;
 
-			if (vkCreateImageView(m_Device->GetLogicalDevice(), &viewCreateInfo, nullptr, &m_ImageViews[i]) != VK_SUCCESS)
-			{
-				//TODO: Assert here
-			}
+			VK_ASSERT(vkCreateImageView(m_Device->GetLogicalDevice(), &viewCreateInfo, nullptr, &m_ImageViews[i]))
 		}
+
+		VkAttachmentDescription depthAttachment{};
+		depthAttachment.format = VK_FORMAT_D32_SFLOAT; //TODO: Can potentially cause issues I guess?
+		depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+		depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+		VkAttachmentReference depthAttachmentRef{};
+		depthAttachmentRef.attachment = 1;
+		depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
 		VkAttachmentDescription colorAttachment{};
 		colorAttachment.format = m_SurfaceFormat.format;
@@ -173,19 +220,21 @@ namespace SkinBuilder
 		subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 		subpass.colorAttachmentCount = 1;
 		subpass.pColorAttachments = &colorAttachmentRef;
+		subpass.pDepthStencilAttachment = &depthAttachmentRef;
 
 		VkSubpassDependency subpassDependency{};
 		subpassDependency.srcSubpass = VK_SUBPASS_EXTERNAL;
 		subpassDependency.dstSubpass = 0;
-		subpassDependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		subpassDependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
 		subpassDependency.srcAccessMask = 0;
-		subpassDependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-		subpassDependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+		subpassDependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+		subpassDependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
 
+		std::array attachments = { colorAttachment, depthAttachment };
 		VkRenderPassCreateInfo renderPassInfo{};
 		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-		renderPassInfo.attachmentCount = 1;
-		renderPassInfo.pAttachments = &colorAttachment;
+		renderPassInfo.attachmentCount = attachments.size();
+		renderPassInfo.pAttachments = attachments.data();
 		renderPassInfo.subpassCount = 1;
 		renderPassInfo.pSubpasses = &subpass;
 		renderPassInfo.dependencyCount = 1;
@@ -195,11 +244,16 @@ namespace SkinBuilder
 
 		for (uint32_t i = 0; i < imageCount; i++)
 		{
+			std::array fbAttachments = {
+				m_ImageViews[i],
+				m_DepthImageView
+			};
+
 			VkFramebufferCreateInfo framebufferCreateInfo{};
 			framebufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
 			framebufferCreateInfo.renderPass = m_RenderPass;
-			framebufferCreateInfo.attachmentCount = 1;
-			framebufferCreateInfo.pAttachments = &m_ImageViews[i];
+			framebufferCreateInfo.attachmentCount = fbAttachments.size();
+			framebufferCreateInfo.pAttachments = fbAttachments.data();
 			framebufferCreateInfo.width = m_SwapExtent.width;
 			framebufferCreateInfo.height = m_SwapExtent.height;
 			framebufferCreateInfo.layers = 1;
@@ -237,6 +291,10 @@ namespace SkinBuilder
 			vkDestroySemaphore(m_Device->GetLogicalDevice(), m_RenderFinishedSemaphores[i], nullptr);
 			vkDestroyFence(m_Device->GetLogicalDevice(), m_FrameInFlightFences[i], nullptr);
 		}
+
+		vkDestroyImageView(m_Device->GetLogicalDevice(), m_DepthImageView, nullptr);
+		VulkanAllocator::FreeAllocation(m_DepthImageAllocation);
+
 		vkDestroySwapchainKHR(m_Device->GetLogicalDevice(), m_Swapchain, nullptr);
 		vkDestroySurfaceKHR(m_Instance, m_Surface, nullptr);
 

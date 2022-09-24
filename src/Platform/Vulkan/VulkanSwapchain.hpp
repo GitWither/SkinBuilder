@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include "Core/SkinBuilder.hpp"
+#include "VulkanAllocator.hpp"
 #include "VulkanDevice.hpp"
 #include "Core/Core.hpp"
 #include <GLFW/glfw3.h>
@@ -25,6 +26,10 @@ namespace SkinBuilder
 		VkSwapchainKHR m_Swapchain = VK_NULL_HANDLE;
 
 		VkRenderPass m_RenderPass = VK_NULL_HANDLE;
+
+		VkImage m_DepthImage = VK_NULL_HANDLE;
+		VkImageView m_DepthImageView = VK_NULL_HANDLE;
+		VmaAllocation m_DepthImageAllocation = VK_NULL_HANDLE;
 
 		std::vector<VkImage> m_Images;
 		std::vector<VkImageView> m_ImageViews;

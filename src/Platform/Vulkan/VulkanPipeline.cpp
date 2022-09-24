@@ -93,6 +93,18 @@ namespace SkinBuilder
 		colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
 		colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
 
+		VkPipelineDepthStencilStateCreateInfo depthStencil{};
+		depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+		depthStencil.depthTestEnable = VK_TRUE;
+		depthStencil.depthWriteEnable = VK_TRUE;
+		depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
+		depthStencil.depthBoundsTestEnable = VK_FALSE;
+		depthStencil.minDepthBounds = 0.0f;
+		depthStencil.maxDepthBounds = 1.0f;
+		depthStencil.stencilTestEnable = VK_FALSE;
+		depthStencil.front = {};
+		depthStencil.back = {};
+
 		VkPipelineColorBlendStateCreateInfo blendingInfo{};
 		blendingInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
 		blendingInfo.logicOpEnable = VK_FALSE;
@@ -148,7 +160,7 @@ namespace SkinBuilder
 		pipelineInfo.pViewportState = &viewportState;
 		pipelineInfo.pRasterizationState = &rasterState;
 		pipelineInfo.pMultisampleState = &msInfo;
-		pipelineInfo.pDepthStencilState = nullptr;
+		pipelineInfo.pDepthStencilState = &depthStencil;
 		pipelineInfo.pColorBlendState = &blendingInfo;
 		pipelineInfo.pDynamicState = &dynamicStateInfo;
 		pipelineInfo.layout = m_PipelineLayout;
