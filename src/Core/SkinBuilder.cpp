@@ -12,6 +12,21 @@ namespace SkinBuilder
 {
 	static SkinBuilder* s_SkinBuilder = nullptr;
 
+	constexpr static std::array s_SkinCategories = {
+		"Skin Texture",
+		"Hair",
+		"Eyes",
+		"Mouths",
+		"Facial Hair",
+		"Top Clothing",
+		"Bottom Clothing",
+		"Outerwear",
+		"Hats",
+		"Face Accessories",
+		"Gloves",
+		"Shoes"
+	};
+
 	SkinBuilder::SkinBuilder(const uint32_t width, const uint32_t height, const std::string& title)
 	{
 		Logger::Initialize();
@@ -56,6 +71,30 @@ namespace SkinBuilder
 
 			ImGuiHelper::Begin();
 
+			ImGui::Begin("Character Builder");
+
+			constexpr float_t thumbnailSize = 80.0f;
+			constexpr float_t padding = 18.0f;
+
+			const ImVec2 maxRegion = ImGui::GetContentRegionAvail();
+			const uint32_t maxColumns = static_cast<uint32_t>(maxRegion.x / (thumbnailSize + padding));
+
+			for (const auto& skinCategory : s_SkinCategories)
+			{
+				if (ImGui::CollapsingHeader(skinCategory))
+				{
+					ImGui::Columns(maxColumns, skinCategory, false);
+					for (int i = 0; i < 5; i++)
+					{
+						ImGuiHelper::ScopedColor(ImGuiCol_Button, 0x00000000);
+						ImGui::Button("Test", ImVec2(thumbnailSize, thumbnailSize));
+						ImGui::NextColumn();
+					}
+					ImGui::Columns(1);
+				}
+			}
+
+			ImGui::End();
 			ImGui::ShowDemoWindow();
 
 			ImGui::Render();
