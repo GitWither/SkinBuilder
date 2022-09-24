@@ -20,7 +20,7 @@ namespace SkinBuilder
 		triangleIndices.reserve(mesh->mNumFaces * 3);
 		vertices.reserve(mesh->mNumVertices);
 
-		for (uint32_t i = 0; i < mesh->mNumFaces; i++)
+		for (uint32_t i = 0; i < mesh->mNumVertices; i++)
 		{
 			const aiVector3D vertex = mesh->mVertices[i];
 
